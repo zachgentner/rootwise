@@ -4,13 +4,20 @@
   "description": "",
   "main": "script.js",
   "scripts": {
-    "build": "webpack"
+    "build": "webpack --config webpack.config.cjs",
+    "pack:chrome": "node scripts/package.cjs chrome",
+    "pack:firefox": "node scripts/package.cjs firefox",
+    "pack": "node scripts/package.cjs",
+    "release:chrome": "npm run build && npm run pack:chrome",
+    "release:firefox": "npm run build && npm run pack:firefox",
+    "release": "npm run build && npm run pack"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
   "devDependencies": {
+    "archiver": "^6.0.2",
     "babel": "^6.23.0",
     "eslint": "^8.53.0",
     "eslint-config-airbnb-base": "^15.0.0",

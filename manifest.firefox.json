@@ -1,0 +1,30 @@
+{
+  "name": "Rootwise",
+  "version": "1.0.0",
+  "description": "Rootwise allows genealogy researchers to quickly navigate to different web sources for each ancestor.",
+  "manifest_version": 3,
+  "author": "Zach Gentner",
+  "action": {
+    "default_popup": "/src/markup/index.html",
+    "default_title": "Rootwise",
+    "default_icon": {
+      "16": "/src/img/favicon/favicon-16x16.png",
+      "32": "/src/img/favicon/favicon-32x32.png",
+      "48": "/src/img/favicon/favicon-32x32.png",
+      "128": "/src/img/favicon/favicon-32x32.png"
+    }
+  },
+  "permissions": ["activeTab", "contextMenus", "storage"],
+  "host_permissions": [
+    "https://zuyeczifsofwdmpnltny.supabase.co/*"
+  ],
+  "background": {
+    "scripts": ["/dist/scripts/background.js"]
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "rootwise@solunadigital.com",
+      "strict_min_version": "109.0"
+    }
+  }
+}

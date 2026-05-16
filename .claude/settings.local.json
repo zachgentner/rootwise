@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(npm install *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(node -e \"const a = require\\('archiver'\\); console.log\\(typeof a, Object.keys\\(a\\).slice\\(0,5\\)\\)\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('background'\\), indent=2\\)\\)\")"
     ]
   }
 }
