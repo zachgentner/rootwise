@@ -129,7 +129,9 @@ Usage details will be updated once Rootwise reaches it's initial deployment.
 
 - [x] Add a navigation input to quickly switch back and forth between ancestors.
 - [ ] Add settings page to customize usability of the web utility.
+- [ ] Add ancestor data to browser local storage instead of json.
 - [ ] Add feature to import and parse gedcom files to automatically import ancestors.
+- [ ] Add accounts with Oauth sign in option that have persistent databases.
 
 See the [open issues](https://github.com/zachgentner/rootwiseissues) for a full list of proposed features (and known issues).
 

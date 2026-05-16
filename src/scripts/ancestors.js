@@ -43,7 +43,7 @@ export const gentner = {
     surname: 'Gentner',
     maiden: '',
     birth: '1941',
-    death: '',
+    death: '2025',
     ancestry: '352320388755',
     familysearch: 'L2YL-YL7',
     findagrave: '175284135',

@@ -14,8 +14,11 @@
       "128": "/src/img/favicon/favicon-32x32.png"
     }
   },
-  "permissions": ["activeTab", "contextMenus"],
+  "permissions": ["activeTab", "contextMenus", "storage"],
+  "host_permissions": [
+    "https://zuyeczifsofwdmpnltny.supabase.co/*"
+  ],
   "background": {
-    "service_worker": "/src/scripts/background.js"
+    "service_worker": "/dist/scripts/background.js"
   }
 }
