@@ -1,6 +1,5 @@
 import * as data from './data.js';
 import * as ui from './ui.js';
-import * as person from './person.js';
 import { getSession, signOut } from './auth.js';
 
 const info = document.getElementById('info');

@@ -4,7 +4,20 @@
       "Bash(npm install *)",
       "Bash(npm run *)",
       "Bash(node -e \"const a = require\\('archiver'\\); console.log\\(typeof a, Object.keys\\(a\\).slice\\(0,5\\)\\)\")",
-      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('background'\\), indent=2\\)\\)\")"
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('background'\\), indent=2\\)\\)\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\zachg\\\\Documents\\\\development\\\\rootwise\\\\src\\\\scripts\" -Filter \"*.js\")",
+      "Bash(Select-Object Name)",
+      "Bash(git rm *)",
+      "Bash(git filter-repo *)",
+      "Bash(git filter-branch *)",
+      "Bash(git stash *)",
+      "Bash(FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --force --index-filter 'git rm --cached --ignore-unmatch rootwise.pem rootwise.crx' --prune-empty -- --all)",
+      "Bash(xargs -I {} git update-ref -d {})",
+      "Bash(git reflog *)",
+      "Bash(git gc *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }
