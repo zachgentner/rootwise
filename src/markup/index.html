@@ -4,180 +4,110 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Rootwise</title>
-    <link rel="icon" type="image/x-icon" href="img/favicon/favicon.ico" />
-    <link
-      rel="apple-touch-icon"
-      sizes="180x180"
-      href="img/favicon/apple-touch-icon.png"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="32x32"
-      href="img/favicon-32x32.png"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="16x16"
-      href="img/favicon-16x16.png"
-    />
-    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/x-icon" href="/src/img/favicon/favicon.ico" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,400;1,600&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
     <link rel="stylesheet" href="/src/styles/main.css" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
-    />
   </head>
   <body>
     <main>
-      <!-- INFORMATION -->
-      <div id="info" class="container">
+
+      <!-- HEADER -->
+      <div id="info">
         <div id="profile">
-          <!-- <img src="https://gravatar.com/userimage/79746757/3c912a1d5fb907c633bfb0842725cf2a.jpeg?size=256" alt=""> -->
-          <i class="fa-regular fa-user fa-lg"></i>
+          <i class="fa-regular fa-user"></i>
         </div>
-        <div style="flex-grow: 1">
+        <div class="info-center">
           <h1 id="name">Firstname M. Surname</h1>
-          <p id="lifespan">1800-1900</p>
+          <p id="lifespan">1800 – 1900</p>
         </div>
-        <div style="display: flex">
-          <p id="id">ID:</p>
-          <i
-            id="edit"
-            role="button"
-            class="fa-regular fa-pen-to-square"
-            style="margin-left: 5px"
-          ></i>
+        <div class="info-end">
+          <p id="id">ID: —</p>
+          <i id="edit" role="button" class="fa-regular fa-pen-to-square"></i>
         </div>
       </div>
 
-      <!-- <div style="background-color: white; margin: -10px; display: flex; justify-content: center;">
-            <i class="fa-solid fa-chevron-down"></i>
-        </div> -->
-
-      <!-- EDIT -->
-      <form id="editMenu">
-        <!-- NAME -->
-        <p style="color: white; font-size: 14px; font-weight: bold">Names</p>
-        <p style="color: white; font-size: 12px">Forenames</p>
-        <div>
-          <input
-            style="width: 50%"
-            type="text"
-            id="firstInput"
-            placeholder="First"
-          />
-          <input
-            style="width: 50%"
-            type="text"
-            id="middleInput"
-            placeholder="Middle"
-          />
-        </div>
-        <p style="color: white; font-size: 12px">Surnames</p>
-        <div>
-          <input
-            style="width: 50%"
-            type="text"
-            id="maidenInput"
-            placeholder="Maiden"
-          />
-          <input
-            style="width: 50%"
-            type="text"
-            id="surnameInput"
-            placeholder="Surname"
-          />
+      <!-- EDIT OVERLAY -->
+      <form id="editMenu" style="display:none;">
+        <button type="button" id="editCancel" title="Cancel">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+        <span class="edit-label">Forenames</span>
+        <div class="edit-row">
+          <input type="text" id="firstInput"  placeholder="First"  style="flex:1" />
+          <input type="text" id="middleInput" placeholder="Middle" style="flex:1" />
         </div>
 
-        <!-- DATES -->
-        <p style="color: white; font-size: 14px; font-weight: bold">Dates</p>
-        <div>
-          <div style="display: flex; justify-content: left; width: 50%">
-            <p>Birth</p>
-            <input style="width: 80px" type="text" id="birthInput" />
+        <span class="edit-label">Surnames</span>
+        <div class="edit-row">
+          <input type="text" id="maidenInput"   placeholder="Maiden"  style="flex:1" />
+          <input type="text" id="surnameInput"  placeholder="Surname" style="flex:1" />
+        </div>
+
+        <span class="edit-label">Dates</span>
+        <div class="edit-row">
+          <div class="edit-field" style="flex:1">
+            <span class="edit-field-abbr">Birth</span>
+            <input type="text" id="birthInput" placeholder="yyyy" />
           </div>
-          <div style="display: flex; justify-content: left; width: 50%">
-            <p>Death</p>
-            <input style="width: 80px" type="text" id="deathInput" />
+          <div class="edit-field" style="flex:1">
+            <span class="edit-field-abbr">Death</span>
+            <input type="text" id="deathInput" placeholder="yyyy" />
           </div>
         </div>
 
-        <!-- IDs -->
-        <p style="color: white; font-size: 14px; font-weight: bold">
-          ID Numbers
-        </p>
-        <div>
-          <p>ANCS</p>
+        <span class="edit-label">Source IDs</span>
+        <div class="edit-field">
+          <span class="edit-field-abbr">ANCS</span>
           <input type="text" id="ancestryInput" />
         </div>
-        <div>
-          <p>FAMS</p>
+        <div class="edit-field">
+          <span class="edit-field-abbr">FAMS</span>
           <input type="text" id="familysearchInput" />
         </div>
-        <div>
-          <p>FGRV</p>
+        <div class="edit-field">
+          <span class="edit-field-abbr">FGRV</span>
           <input type="text" id="findagraveInput" />
         </div>
-        <div>
-          <p>MHTG</p>
+        <div class="edit-field">
+          <span class="edit-field-abbr">MHTG</span>
           <input type="text" id="myheritageInput" />
         </div>
 
-        <div style="display: flex; justify-content: center; margin-top: 10px">
-          <div id="save-btn" class="btn">Save</div>
+        <div class="edit-actions">
+          <div id="save-btn">Save</div>
         </div>
       </form>
 
       <!-- QUICKLINKS -->
       <div id="quicklinks">
-        <button id="ancestry">
+        <button id="ancestry" title="Ancestry">
           <a class="link" href="http://www.ancestry.com" target="_blank">
-            <img
-              src="/src/img/ancestry.svg"
-              alt="Ancestry.com quicklink icon"
-            />
+            <img src="/src/img/ancestry.svg" alt="Ancestry" />
           </a>
         </button>
-
-        <!-- <button id="myheritage">
-          <a class="link" href="http://www.myheritage.com" target="_blank">
-            <img
-              src="/src/img/myheritage.png"
-              alt="Myheritage.com quicklink icon"
-            />
-          </a>
-        </button> -->
-
-        <button id="familysearch">
+        <button id="familysearch" title="FamilySearch">
           <a class="link" href="http://www.familysearch.org" target="_blank">
-            <img
-              src="/src/img/familysearch.png"
-              alt="Familysearch.com quicklink icon"
-            />
+            <img src="/src/img/familysearch.png" alt="FamilySearch" />
           </a>
         </button>
-
-        <button id="fstree">
+        <button id="fstree" title="FamilySearch Tree">
           <a class="link" href="http://www.familysearch.org" target="_blank">
-            <img src="/src/img/fan.png" alt="Familysearch.com tree view" />
+            <img src="/src/img/fan.png" alt="Fan chart" />
           </a>
         </button>
-
-        <button id="findagrave">
+        <button id="findagrave" title="Find A Grave">
           <a class="link" href="http://www.findagrave.com" target="_blank">
-            <img
-              src="/src/img/findagrave.png"
-              alt="Findagrave.com quicklink icon"
-            />
+            <img src="/src/img/findagrave.png" alt="Find A Grave" />
           </a>
         </button>
       </div>
 
-      <!-- SEARCHBAR -->
+      <!-- SEARCH -->
       <form id="search" action="submit">
-        <button id="submit">
+        <button id="submit" type="button">
           <i class="fa-solid fa-magnifying-glass"></i>
         </button>
         <input
@@ -186,72 +116,51 @@
           autocomplete="off"
           spellcheck="false"
           autocorrect="off"
+          placeholder="Search ancestors…"
           autofocus
         />
       </form>
+
+      <!-- SEARCH RESULTS -->
       <ul id="results"></ul>
+
+      <!-- SPACER -->
+      <div class="spacer"></div>
 
       <!-- TOOLBAR -->
       <div id="toolbar">
-        <!-- EDIT WILL ALLOW USERS TO MANUALLY EDIT AND SAVE DETAILS ABOUT THE ACTIVE ANCESTOR -->
         <button id="add" title="Add Person">
-          <a class="link" href="index.html">
-            <i class="fa-solid fa-user-plus"></i>
-          </a>
+          <a class="link" href="#"><i class="fa-solid fa-user-plus"></i></a>
         </button>
-
-        <!-- SOURCES WILL ALLOW USERS TO CLIP URLS AND ATTACH THEM TO ANCESTORS FOR FUTURE REFERENCE -->
         <button id="sources" title="Sources">
-          <a class="link" href="index.html">
-            <i class="fa-solid fa-box-archive"></i>
-          </a>
+          <a class="link" href="#"><i class="fa-solid fa-box-archive"></i></a>
         </button>
-        <!-- PHOTOS WILL ALLOW USERS TO CLIP PHOTO URLS AND ATTACH THEM TO ANCESTORS FOR FUTURE REFERENCE -->
         <button id="photos" title="Photos">
-          <a class="link" href="index.html">
-            <i class="fa-regular fa-image"></i>
-          </a>
+          <a class="link" href="#"><i class="fa-regular fa-image"></i></a>
         </button>
-        <!-- TASKS WILL ALLOW USERS TO RECORD AND MANAGE TODO ITEMS FOR EACH ANCESTOR -->
         <button id="tasks" title="Tasks">
-          <a class="link" href="index.html">
-            <i class="fa-solid fa-list-check"></i>
-          </a>
+          <a class="link" href="#"><i class="fa-solid fa-list-check"></i></a>
         </button>
-        <!-- TASKS WILL ALLOW USERS TO RECORD AND MANAGE TODO ITEMS FOR EACH ANCESTOR -->
         <button id="notes" title="Notes">
-          <a class="link" href="index.html">
-            <!-- <i class="fa-regular fa-note-sticky"></i> -->
-            <i class="fa-regular fa-clipboard"></i>
-          </a>
+          <a class="link" href="#"><i class="fa-regular fa-clipboard"></i></a>
         </button>
-        <!-- REPORTS WILL ALLOW USERS TO GENERATE MEANINGFUL DATA BASED ON THE INFORMATION CURRENTLY ENTERED FOR THEIR ANCESTORS -->
         <button id="reports" title="Reports">
-          <a class="link" href="index.html">
-            <i class="fa-solid fa-chart-pie"></i>
-          </a>
+          <a class="link" href="#"><i class="fa-solid fa-chart-pie"></i></a>
         </button>
-        <!-- WEBSEARCH WILL ALLOW USERS TO SEARCH NUMEROUS GENEALOGY WEBSITES FOR THE ACTIVE ANCESTOR WITH THE CLICK OF A BUTTON -->
         <button id="websearch" title="Web Search">
-          <a class="link" href="">
-            <i class="fa-solid fa-globe"></i>
-          </a>
+          <a class="link" href="#"><i class="fa-solid fa-globe"></i></a>
         </button>
-        <!-- SETTINGS WILL ALLOW USERS TO CHANGE FUNCTIONALITY OF THE WEB UTILITY -->
         <button id="settings" title="Settings">
-          <a class="link" href="./settings.html">
-            <i class="fa-solid fa-gear"></i>
-          </a>
+          <a class="link" href="./settings.html"><i class="fa-solid fa-gear"></i></a>
         </button>
-        <!-- LOG OUT WILL ALLOW USERS TO SIGN OUT OF THE WEB APPLICATION AND RETURN TO THE SIGN IN MENU -->
-        <button id="logout" title="Logout">
-          <a class="link" href="signin.html">
-            <i class="fa-solid fa-arrow-right-from-bracket"></i>
-          </a>
+        <button id="popout" title="Pop Out">
+          <a class="link" href="#"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+        </button>
+        <button id="logout" title="Sign Out">
+          <a class="link" href="#"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
         </button>
       </div>
 
-      <!-- <button id="test" style="margin: 12px; padding: 12px;">Click</button> -->
     </main>
 
     <script src="/dist/scripts/script.js"></script>

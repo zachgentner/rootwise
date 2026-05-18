@@ -5,6 +5,9 @@
   "main": "script.js",
   "scripts": {
     "build": "webpack --config webpack.config.cjs",
+    "watch": "webpack --config webpack.config.cjs --watch",
+    "dev:firefox": "web-ext run --source-dir . --manifest-file manifest.firefox.json --ignore-files src/scripts/** scripts/** node_modules/**",
+    "dev": "concurrently -n webpack,web-ext -c blue,green \"npm run watch\" \"npm run dev:firefox\"",
     "pack:chrome": "node scripts/package.cjs chrome",
     "pack:firefox": "node scripts/package.cjs firefox",
     "pack": "node scripts/package.cjs",
@@ -19,12 +22,14 @@
   "devDependencies": {
     "archiver": "^6.0.2",
     "babel": "^6.23.0",
+    "concurrently": "^9.2.1",
     "eslint": "^8.53.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-import": "^2.28.1",
     "nodemon": "^3.0.1",
     "prettier": "3.0.3",
+    "web-ext": "^10.1.0",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4"
   },

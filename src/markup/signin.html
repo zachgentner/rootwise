@@ -4,74 +4,39 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sign In – Rootwise</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,400;1,600&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" />
     <link rel="stylesheet" href="/src/styles/main.css" />
-    <style>
-      .signin-wrap {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 24px 16px;
-      }
-      .signin-logo {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        background-color: #202429;
-        margin: -10px -16px 24px;
-        padding: 16px;
-        width: calc(100% + 32px);
-      }
-      .signin-form {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        width: 100%;
-        max-width: 280px;
-      }
-      .signin-form input {
-        width: 100%;
-        box-sizing: border-box;
-        padding: 8px 10px;
-        font-size: 14px;
-      }
-      .signin-form button[type="submit"] {
-        margin-top: 4px;
-        padding: 8px;
-        font-size: 14px;
-        cursor: pointer;
-      }
-      #error-msg {
-        color: #e57373;
-        font-size: 12px;
-        min-height: 16px;
-        text-align: center;
-      }
-    </style>
   </head>
   <body>
-    <main class="signin-wrap">
-      <div class="signin-logo">
-        <img src="/src/img/logo.png" alt="Rootwise logo" />
+    <main class="signin-page">
+      <div class="signin-header">
+        <img src="/src/img/logo.png" alt="Rootwise" />
       </div>
 
-      <form id="signin-form" class="signin-form" autocomplete="on">
-        <input
-          id="email"
-          type="email"
-          placeholder="Email"
-          autocomplete="email"
-          required
-        />
-        <input
-          id="password"
-          type="password"
-          placeholder="Password"
-          autocomplete="current-password"
-          required
-        />
-        <p id="error-msg"></p>
-        <button type="submit">Sign In</button>
-      </form>
+      <div class="signin-body">
+        <p class="signin-title">Welcome back</p>
+
+        <form id="signin-form" class="signin-form" autocomplete="on">
+          <input
+            id="email"
+            type="email"
+            placeholder="Email"
+            autocomplete="email"
+            required
+          />
+          <input
+            id="password"
+            type="password"
+            placeholder="Password"
+            autocomplete="current-password"
+            required
+          />
+          <p id="error-msg"></p>
+          <button type="submit">Sign In</button>
+        </form>
+      </div>
     </main>
 
     <script src="/dist/scripts/signin.js"></script>

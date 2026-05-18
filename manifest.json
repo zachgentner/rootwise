@@ -14,7 +14,7 @@
       "128": "/src/img/favicon/favicon-32x32.png"
     }
   },
-  "permissions": ["activeTab", "contextMenus", "storage"],
+  "permissions": ["activeTab", "contextMenus", "storage", "windows"],
   "host_permissions": [
     "https://zuyeczifsofwdmpnltny.supabase.co/*"
   ],

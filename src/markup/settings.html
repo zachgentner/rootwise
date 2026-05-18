@@ -3,44 +3,82 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Settings</title>
+    <title>Settings – Rootwise</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,400;1,600&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
     <link rel="stylesheet" href="/src/styles/main.css" />
-    <link rel="stylesheet" href="/src/styles/settings.css" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
-    />
   </head>
   <body>
-    <main>
-      <div id="header" class="flex-row">
+    <main class="settings-page">
+
+      <div id="header">
         <h1>Settings</h1>
-        <button style="height: 30px">
-          <a class="link" href="./index.html">
-            <i class="fa-solid fa-house"></i>
-          </a>
+        <button title="Back" onclick="location.href='./index.html'">
+          <i class="fa-solid fa-arrow-left"></i>
         </button>
       </div>
 
-      <div id="settings-menu">
-        <ul>
-          <form action="submit">
-            <input type="checkbox" name="autoload" id="autoload" />
-            <li style="margin: 6px 0 6px 6px">Autoload</li>
+      <div class="settings-body">
+
+        <section class="settings-section">
+          <p class="settings-section-title">General</p>
+          <label class="settings-toggle-row" for="autoload">
+            <span>
+              <span class="settings-row-label">Autoload</span>
+              <span class="settings-row-desc">Detect ancestor from active tab URL</span>
+            </span>
+            <input type="checkbox" id="autoload" />
+          </label>
+        </section>
+
+        <section class="settings-section">
+          <p class="settings-section-title">Source IDs</p>
+          <div class="settings-field">
+            <label class="settings-field-label" for="ancestryTreeId">Ancestry Tree</label>
+            <input type="text" id="ancestryTreeId" placeholder="Tree ID" spellcheck="false" />
+          </div>
+          <div class="settings-field">
+            <label class="settings-field-label" for="ancestryRoot">Ancestry Root</label>
+            <input type="text" id="ancestryRoot" placeholder="Root person ID" spellcheck="false" />
+          </div>
+          <div class="settings-field">
+            <label class="settings-field-label" for="familysearchId">FamilySearch</label>
+            <input type="text" id="familysearchId" placeholder="Person ID" spellcheck="false" />
+          </div>
+          <div class="settings-field">
+            <label class="settings-field-label" for="findagraveId">FindAGrave</label>
+            <input type="text" id="findagraveId" placeholder="Memorial ID" spellcheck="false" />
+          </div>
+          <div class="settings-field">
+            <label class="settings-field-label" for="myheritageId">MyHeritage</label>
+            <input type="text" id="myheritageId" placeholder="Site ID" spellcheck="false" />
+          </div>
+          <div class="settings-field">
+            <label class="settings-field-label" for="myheritageRoot">MH Root</label>
+            <input type="text" id="myheritageRoot" placeholder="Root person ID" spellcheck="false" />
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <p class="settings-section-title">Data</p>
+          <form id="upload">
+            <label class="settings-file-row">
+              <i class="fa-solid fa-file-import"></i>
+              <span>Import GEDCOM</span>
+              <input type="file" accept=".ged" />
+            </label>
+            <button type="submit" class="settings-file-btn">Import</button>
           </form>
-          <form action="submit">
-            <select name="family" id="family">
-              <option value="Johnson Family">Johnson Family</option>
-              <option value="Smith Family">Smith Family</option>
-            </select>
-            <li style="margin: 6px">Active</li>
-          </form>
-        </ul>
+        </section>
+
+        <div class="settings-footer">
+          <p id="save-status"></p>
+          <button id="save-settings">Save</button>
+        </div>
+
       </div>
-      <form id="upload" action="submit">
-        <input type="file" />
-        <button>Submit</button>
-      </form>
     </main>
 
     <script src="/dist/scripts/forms.js"></script>

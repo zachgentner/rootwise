@@ -9,6 +9,11 @@ const input = document.getElementById('input');
 const edit = document.getElementById('edit');
 const editMenu = document.getElementById('editMenu');
 const saveBtn = document.getElementById('save-btn');
+const cancelBtn = document.getElementById('editCancel');
+const popoutBtn = document.getElementById('popout');
+
+const isPopout = new URLSearchParams(window.location.search).get('popout') === 'true';
+if (isPopout) popoutBtn.style.display = 'none';
 
 window.addEventListener('load', async () => {
   const session = await getSession();
@@ -96,6 +101,22 @@ saveBtn.addEventListener('click', async () => {
     console.error('Save failed:', err.message);
   }
   ui.toggleElement(editMenu);
+});
+
+cancelBtn.addEventListener('click', () => {
+  ui.toggleElement(editMenu);
+});
+
+popoutBtn.querySelector('a').addEventListener('click', (e) => {
+  e.preventDefault();
+  chrome.windows.create({
+    url: chrome.runtime.getURL('/src/markup/index.html?popout=true'),
+    type: 'popup',
+    width: 356,
+    height: 520,
+    focused: true,
+  });
+  window.close();
 });
 
 document.getElementById('logout').querySelector('a').addEventListener('click', async (e) => {
