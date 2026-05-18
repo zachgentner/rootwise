@@ -1039,11 +1039,16 @@ main {
 
 #results {
   display: none;
-  max-height: 96px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 150;
+  max-height: 130px;
   overflow-y: auto;
   overflow-x: hidden;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.10);
   scroll-behavior: smooth;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
@@ -1061,6 +1066,25 @@ main {
   cursor: pointer;
   border-bottom: 1px solid var(--border);
   transition: background 0.1s, color 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.result-dates {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: var(--text-sub);
+  opacity: 0.55;
+  white-space: nowrap;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+
+.result-name {
+  flex: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

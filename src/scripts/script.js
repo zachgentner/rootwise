@@ -12,8 +12,9 @@ const webSearchMenu = document.getElementById('webSearchMenu');
 const linkMenu      = document.getElementById('linkMenu');
 const urlsMenu      = document.getElementById('urlsMenu');
 
-let pendingLink  = null; // { field: 'father_id' | 'mother_id' | 'child' }
-let isAddingNew  = false;
+let pendingLink    = null; // { field: 'father_id' | 'mother_id' | 'child' }
+let pendingNewLink = null; // { field, originId } — set when "create new" is triggered from link overlay
+let isAddingNew    = false;
 const saveBtn = document.getElementById('save-btn');
 const deleteBtn = document.getElementById('delete-btn');
 const cancelBtn = document.getElementById('editCancel');
@@ -69,11 +70,25 @@ document.getElementById('btn-add-child').addEventListener('click', () => {
 });
 
 document.getElementById('link-add-new').addEventListener('click', () => {
+  const savedLink  = pendingLink;
+  const originId   = data.findId(data.active);
+  const rawQuery   = document.getElementById('linkInput').value;
   pendingLink = null;
   ui.toggleElement(linkMenu);
+
   isAddingNew = true;
   deleteBtn.style.display = 'none';
   editMenu.querySelectorAll('input[type="text"]').forEach((el) => { el.value = ''; });
+
+  if (savedLink) {
+    pendingNewLink = { field: savedLink.field, originId };
+  }
+
+  const { first, middle, surname } = parseSearchName(rawQuery);
+  if (first)   editMenu.querySelector('#firstInput').value   = first;
+  if (middle)  editMenu.querySelector('#middleInput').value  = middle;
+  if (surname) editMenu.querySelector('#surnameInput').value = surname;
+
   ui.toggleElement(editMenu);
 });
 
@@ -126,6 +141,11 @@ search.addEventListener('submit', (e) => {
 
 input.addEventListener('focus', () => {
   const results = document.querySelector('#results');
+  results.style.position = 'absolute';
+  results.style.left    = '0';
+  results.style.right   = '0';
+  results.style.zIndex  = '150';
+  results.style.top     = (search.offsetTop + search.offsetHeight) + 'px';
   results.style.display = 'block';
   results.scrollTo(0, 0);
   ui.filterResults(data.searchByName(input.value), '', results);
@@ -179,11 +199,23 @@ saveBtn.addEventListener('click', async () => {
     let id;
     if (isAddingNew) {
       id = await data.createPerson(updatedPerson);
+      if (pendingNewLink) {
+        const { field, originId } = pendingNewLink;
+        if (field === 'child') {
+          await data.setRelation(String(id), 'father_id', originId);
+        } else {
+          await data.setRelation(originId, field, String(id));
+        }
+        pendingNewLink = null;
+        data.setActive(originId);
+      } else {
+        data.setActive(id);
+      }
     } else {
       id = data.findId(data.active);
       await data.savePerson(id, updatedPerson);
+      data.setActive(id);
     }
-    data.setActive(id);
     renderActive();
     isAddingNew = false;
     ui.toggleElement(editMenu);
@@ -209,6 +241,7 @@ deleteBtn.addEventListener('click', async () => {
 
 cancelBtn.addEventListener('click', () => {
   isAddingNew = false;
+  pendingNewLink = null;
   deleteBtn.style.display = '';
   ui.toggleElement(editMenu);
 });
@@ -358,6 +391,21 @@ function renderRelationRow(container, relations) {
     });
     container.appendChild(chip);
   });
+}
+
+function parseSearchName(query) {
+  const trimmed = query.trim();
+  const commaIdx = trimmed.indexOf(',');
+  if (commaIdx !== -1) {
+    const surname    = trimmed.slice(0, commaIdx).trim();
+    const afterComma = trimmed.slice(commaIdx + 1).trim();
+    const spaceIdx   = afterComma.indexOf(' ');
+    if (spaceIdx !== -1) {
+      return { surname, first: afterComma.slice(0, spaceIdx).trim(), middle: afterComma.slice(spaceIdx + 1).trim() };
+    }
+    return { surname, first: afterComma, middle: '' };
+  }
+  return { surname: trimmed, first: '', middle: '' };
 }
 
 function personName(person) {

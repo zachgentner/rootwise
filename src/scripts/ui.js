@@ -111,8 +111,36 @@ export function filterResults(people, search, element) {
           id.maiden.length >= 1
             ? id.maiden
             : id.surname;
-        let middlename = id.middle ? id.middle : ''; // Only add middlename if it exists
-        person.innerText = `${birthSurname}, ${id.first} ${middlename}`;
+        const middlename = id.middle ? ` ${id.middle}` : '';
+
+        const datesSpan = document.createElement('span');
+        datesSpan.className = 'result-dates';
+        datesSpan.style.cssText = 'margin-left:auto;flex-shrink:0;display:flex;align-items:center;gap:1ch;font-family:"IBM Plex Mono",monospace;font-size:9px;opacity:0.65;white-space:nowrap;';
+
+        const birthSpan = document.createElement('span');
+        birthSpan.textContent = id.birth || '';
+        birthSpan.style.cssText = 'display:inline-block;width:4ch;text-align:right;';
+
+        const sepSpan = document.createElement('span');
+        sepSpan.textContent = '–';
+
+        const deathSpan = document.createElement('span');
+        deathSpan.textContent = id.death || '';
+        deathSpan.style.cssText = 'display:inline-block;width:4ch;';
+
+        datesSpan.appendChild(birthSpan);
+        datesSpan.appendChild(sepSpan);
+        datesSpan.appendChild(deathSpan);
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'result-name';
+        nameSpan.textContent = `${birthSurname}, ${id.first}${middlename}`;
+        nameSpan.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+
+        person.style.cssText = 'display:flex;align-items:center;gap:8px;overflow:hidden;';
+
+        person.appendChild(nameSpan);
+        person.appendChild(datesSpan);
         element.appendChild(person);
       }
     });
