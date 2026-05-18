@@ -78,7 +78,8 @@ async function zip(browser) {
 
 async function main() {
   const target = process.argv[2];
-  const browsers = target ? [target] : ['chrome', 'firefox'];
+  const stageOnly = process.argv.includes('--stage-only');
+  const browsers = target && target !== '--stage-only' ? [target] : ['chrome', 'firefox'];
 
   for (const b of browsers) {
     if (!['chrome', 'firefox'].includes(b)) {
@@ -86,7 +87,7 @@ async function main() {
       process.exit(1);
     }
     await stage(b);
-    await zip(b);
+    if (!stageOnly) await zip(b);
   }
 }
 

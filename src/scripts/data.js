@@ -41,6 +41,9 @@ export async function initialize() {
         familysearch: row.familysearch || '',
         findagrave:   row.findagrave   || '',
         myheritage:   row.myheritage   || '',
+        notes:        row.notes        || '',
+        father_id:    row.father_id    ?? null,
+        mother_id:    row.mother_id    ?? null,
         _dbId:        row.id,
       };
     });
@@ -67,11 +70,88 @@ export async function savePerson(internalId, personData) {
       familysearch: personData.familysearch,
       findagrave:   personData.findagrave,
       myheritage:   personData.myheritage,
+      notes:        personData.notes,
     },
     { onConflict: 'user_id,internal_id' }
   );
   if (error) throw error;
-  ids[internalId] = { ...personData, _dbId: ids[internalId]?._dbId };
+  ids[internalId] = { ...ids[internalId], ...personData, _dbId: ids[internalId]?._dbId };
+}
+
+// Save only the notes field for the active person.
+export async function saveNotes(internalId, notes) {
+  const { data: { user } } = await supabase.auth.getUser();
+  const { error } = await supabase
+    .from('ancestors')
+    .update({ notes })
+    .eq('user_id', user.id)
+    .eq('internal_id', parseInt(internalId, 10));
+  if (error) throw error;
+  if (ids[internalId]) ids[internalId].notes = notes;
+}
+
+// Return { father, mother } for a given person (by internal id string).
+// Each value is the person object extended with _id, or null if unset/not found.
+export function getParents(personId) {
+  const person = ids[personId];
+  if (!person) return { father: null, mother: null };
+  const fId = person.father_id;
+  const mId = person.mother_id;
+  return {
+    father: fId != null && ids[fId] ? { _id: String(fId), ...ids[fId] } : null,
+    mother: mId != null && ids[mId] ? { _id: String(mId), ...ids[mId] } : null,
+  };
+}
+
+// Return siblings: people who share at least one parent with the given person.
+export function getSiblings(personId) {
+  const person = ids[personId];
+  if (!person) return [];
+  return Object.entries(ids)
+    .filter(([id, p]) => {
+      if (id === String(personId)) return false;
+      return (person.father_id != null && p.father_id === person.father_id) ||
+             (person.mother_id != null && p.mother_id === person.mother_id);
+    })
+    .map(([id, p]) => ({ _id: id, ...p }));
+}
+
+// Return children: people whose father_id or mother_id equals the given person's id.
+export function getChildren(personId) {
+  const numId = parseInt(personId, 10);
+  return Object.entries(ids)
+    .filter(([, p]) => p.father_id === numId || p.mother_id === numId)
+    .map(([id, p]) => ({ _id: id, ...p }));
+}
+
+// Set or clear a relation field (father_id | mother_id) on any person.
+export async function setRelation(personId, field, relativeId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  const val = relativeId != null ? parseInt(relativeId, 10) : null;
+  const { error } = await supabase
+    .from('ancestors')
+    .update({ [field]: val })
+    .eq('user_id', user.id)
+    .eq('internal_id', parseInt(personId, 10));
+  if (error) throw error;
+  if (ids[personId]) ids[personId][field] = val;
+}
+
+// Delete a person from Supabase and remove from local cache.
+export async function deletePerson(internalId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  const { error } = await supabase
+    .from('ancestors')
+    .delete()
+    .eq('user_id', user.id)
+    .eq('internal_id', parseInt(internalId, 10));
+  if (error) throw error;
+  const wasActive = active === ids[internalId];
+  delete ids[internalId];
+  if (wasActive) {
+    const remaining = Object.keys(ids);
+    active = remaining.length > 0 ? ids[remaining[0]] : undefined;
+  }
 }
 
 // HOMEPAGE FUNCTIONS

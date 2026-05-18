@@ -8,6 +8,8 @@
     "watch": "webpack --config webpack.config.cjs --watch",
     "dev:firefox": "web-ext run --source-dir . --manifest-file manifest.firefox.json --ignore-files src/scripts/** scripts/** node_modules/**",
     "dev": "concurrently -n webpack,web-ext -c blue,green \"npm run watch\" \"npm run dev:firefox\"",
+    "stage:firefox": "node scripts/package.cjs firefox --stage-only",
+    "dev:firefox-dist": "npm run build && npm run stage:firefox && concurrently -n webpack,restage,web-ext -c blue,yellow,green \"npm run watch\" \"nodemon --watch dist/scripts --watch src/markup --watch src/styles --ext js,html,css --delay 1 --exec \\\"npm run stage:firefox\\\"\" \"web-ext run --source-dir dist/firefox --firefox '/mnt/c/Program Files/Mozilla Firefox/firefox.exe'\"",
     "pack:chrome": "node scripts/package.cjs chrome",
     "pack:firefox": "node scripts/package.cjs firefox",
     "pack": "node scripts/package.cjs",

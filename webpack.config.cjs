@@ -38,6 +38,18 @@ module.exports = [
     resolve: { extensions: ['.js'] },
   },
   {
+    name: 'notes',
+    entry: './src/scripts/notes.js',
+    output: {
+      path: path.resolve(__dirname, 'dist/scripts'),
+      filename: 'notes.js',
+    },
+    target: 'web',
+    mode: 'production',
+    devtool: false,
+    resolve: { extensions: ['.js'] },
+  },
+  {
     name: 'background',
     entry: './src/scripts/background.js',
     output: {

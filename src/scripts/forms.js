@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await loadSettings();
 
+  document.getElementById('back-btn').addEventListener('click', () => { location.href = './index.html'; });
   document.getElementById('save-settings').addEventListener('click', saveSettings);
   document.getElementById('upload').addEventListener('submit', handleUpload);
 });

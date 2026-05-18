@@ -8,7 +8,12 @@ const search = document.getElementById('search');
 const input = document.getElementById('input');
 const edit = document.getElementById('edit');
 const editMenu = document.getElementById('editMenu');
+const webSearchMenu = document.getElementById('webSearchMenu');
+const linkMenu      = document.getElementById('linkMenu');
+
+let pendingLink = null; // { field: 'father_id' | 'mother_id' | 'child', label: string }
 const saveBtn = document.getElementById('save-btn');
+const deleteBtn = document.getElementById('delete-btn');
 const cancelBtn = document.getElementById('editCancel');
 const popoutBtn = document.getElementById('popout');
 
@@ -34,9 +39,47 @@ window.addEventListener('load', async () => {
 });
 
 document.addEventListener('keydown', (e) => {
-  if (editMenu.style.display !== 'none') {
-    if (e.key === 'Escape') ui.toggleElement(editMenu);
+  if (e.key === 'Escape') {
+    if (linkMenu.style.display !== 'none')      { pendingLink = null; ui.toggleElement(linkMenu); }
+    else if (editMenu.style.display !== 'none')  ui.toggleElement(editMenu);
+    else if (webSearchMenu.style.display !== 'none') ui.toggleElement(webSearchMenu);
   }
+});
+
+document.getElementById('websearch').querySelector('a').addEventListener('click', (e) => {
+  e.preventDefault();
+  populateWebSearch();
+  ui.toggleElement(webSearchMenu);
+});
+
+document.getElementById('webSearchCancel').addEventListener('click', () => {
+  ui.toggleElement(webSearchMenu);
+});
+
+document.getElementById('linkCancel').addEventListener('click', () => {
+  pendingLink = null;
+  ui.toggleElement(linkMenu);
+});
+
+document.getElementById('btn-add-child').addEventListener('click', () => {
+  openLinkOverlay('child', 'Attach Child');
+});
+
+document.getElementById('link-add-new').addEventListener('click', () => {
+  pendingLink = null;
+  ui.toggleElement(linkMenu);
+  editMenu.querySelectorAll('input[type="text"]').forEach((el) => { el.value = ''; });
+  ui.toggleElement(editMenu);
+});
+
+document.getElementById('linkInput').addEventListener('input', (e) => {
+  populateLinkResults(e.target.value);
+});
+
+document.getElementById('notes').querySelector('a').addEventListener('click', (e) => {
+  e.preventDefault();
+  const id = data.findId(data.active);
+  window.location.href = `/src/markup/notes.html?id=${id}`;
 });
 
 search.addEventListener('submit', (e) => {
@@ -103,6 +146,19 @@ saveBtn.addEventListener('click', async () => {
   ui.toggleElement(editMenu);
 });
 
+deleteBtn.addEventListener('click', async () => {
+  const id = data.findId(data.active);
+  if (!id) return;
+  if (!confirm('Delete this ancestor? This cannot be undone.')) return;
+  try {
+    await data.deletePerson(id);
+    ui.toggleElement(editMenu);
+    if (data.active) renderActive();
+  } catch (err) {
+    console.error('Delete failed:', err.message);
+  }
+});
+
 cancelBtn.addEventListener('click', () => {
   ui.toggleElement(editMenu);
 });
@@ -150,7 +206,167 @@ function renderActive() {
   ui.updateId(data.findId(data.active), info.querySelector('#id'));
   ui.updateLifespan(data.active.birth, data.active.death, info.querySelector('#lifespan'));
   ui.updateLinks(data.getAllLinks(data.active), quicklinks);
+  renderFamily();
 }
+
+function populateWebSearch() {
+  const person = data.active;
+  const nameParts = [person.first, person.middle ? `${person.middle[0]}.` : '', person.surname].filter(Boolean);
+  const fullName = nameParts.join(' ');
+  const lifespan = [person.birth, person.death].filter(Boolean).join(' – ');
+
+  webSearchMenu.querySelector('#websearch-name').textContent = fullName || '—';
+  webSearchMenu.querySelector('#websearch-dates').textContent = lifespan || '';
+
+  const searchName = [person.first, person.maiden || person.surname].filter(Boolean).join(' ');
+  const googleQuery = [searchName, person.birth, 'genealogy'].filter(Boolean).join(' ');
+  webSearchMenu.querySelector('#ws-google').href =
+    `https://www.google.com/search?q=${encodeURIComponent(googleQuery)}`;
+
+  const fsParams = new URLSearchParams();
+  if (person.first) fsParams.set('q.givenName', person.first);
+  const fsSurname = person.maiden || person.surname;
+  if (fsSurname) fsParams.set('q.surname', fsSurname);
+  if (person.birth) {
+    const yr = parseInt(person.birth, 10);
+    if (!isNaN(yr)) {
+      fsParams.set('q.birthLikeDate.from', yr - 5);
+      fsParams.set('q.birthLikeDate.to', yr + 5);
+    }
+  }
+  webSearchMenu.querySelector('#ws-familysearch').href =
+    `https://www.familysearch.org/search/record/results?${fsParams.toString()}`;
+}
+
+// ─── FAMILY PANEL ──────────────────────────────────────────────────────────
+
+function renderFamily() {
+  const activeId = data.findId(data.active);
+  const { father, mother } = data.getParents(activeId);
+  renderParentSlot(document.getElementById('slot-father'), father, 'father_id', 'Father');
+  renderParentSlot(document.getElementById('slot-mother'), mother, 'mother_id', 'Mother');
+  renderRelationRow(document.getElementById('row-siblings'), data.getSiblings(activeId));
+  renderRelationRow(document.getElementById('row-children'), data.getChildren(activeId));
+}
+
+function renderParentSlot(container, relation, field, label) {
+  container.innerHTML = '';
+  if (relation) {
+    const card = document.createElement('div');
+    card.className = 'fam-card';
+    card.innerHTML = `
+      <span class="fam-card-role">${label}</span>
+      <span class="fam-card-name">${personName(relation)}</span>
+      ${personSubline(relation) ? `<span class="fam-card-sub">${personSubline(relation)}</span>` : ''}
+    `;
+    card.addEventListener('click', () => {
+      data.setActive(relation._id);
+      renderActive();
+    });
+
+    const unlink = document.createElement('button');
+    unlink.className = 'fam-unlink';
+    unlink.title = `Unlink ${label.toLowerCase()}`;
+    unlink.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+    unlink.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      try {
+        await data.setRelation(data.findId(data.active), field, null);
+        renderFamily();
+      } catch (err) {
+        console.error('Unlink failed:', err.message);
+      }
+    });
+    card.appendChild(unlink);
+    container.appendChild(card);
+  } else {
+    const empty = document.createElement('button');
+    empty.className = 'fam-empty';
+    empty.innerHTML = `<i class="fa-solid fa-plus"></i><span>${label}</span>`;
+    empty.addEventListener('click', () => openLinkOverlay(field, `Attach ${label}`));
+    container.appendChild(empty);
+  }
+}
+
+function renderRelationRow(container, relations) {
+  container.innerHTML = '';
+  if (!relations.length) {
+    const note = document.createElement('span');
+    note.className = 'fam-none';
+    note.textContent = '—';
+    container.appendChild(note);
+    return;
+  }
+  relations.forEach((person) => {
+    const chip = document.createElement('button');
+    chip.className = 'fam-chip';
+    chip.textContent = personName(person);
+    chip.title = personName(person);
+    chip.addEventListener('click', () => {
+      data.setActive(person._id);
+      renderActive();
+    });
+    container.appendChild(chip);
+  });
+}
+
+function personName(person) {
+  return [person.first, person.surname || person.maiden].filter(Boolean).join(' ') || '—';
+}
+
+function personSubline(person) {
+  return [person.birth, person.death].filter(Boolean).join(' – ');
+}
+
+function openLinkOverlay(field, title) {
+  pendingLink = { field };
+  document.getElementById('link-title').textContent = title;
+  document.getElementById('linkInput').value = '';
+  populateLinkResults('');
+  ui.toggleElement(linkMenu);
+  setTimeout(() => document.getElementById('linkInput').focus(), 50);
+}
+
+function populateLinkResults(query) {
+  const list = document.getElementById('linkResults');
+  list.innerHTML = '';
+  const activeId = data.findId(data.active);
+
+  data.searchByName(query)
+    .filter((p) => data.findId(p) !== activeId)
+    .forEach((person) => {
+      const personId = data.findId(person);
+      const li = document.createElement('li');
+      const sub = personSubline(person);
+      li.innerHTML = `
+        <span class="link-result-name">${personName(person)}</span>
+        ${sub ? `<span class="link-result-sub">${sub}</span>` : ''}
+      `;
+      li.addEventListener('click', async () => {
+        if (!pendingLink) return;
+        try {
+          if (pendingLink.field === 'child') {
+            if (person.father_id != null && person.mother_id != null) {
+              alert('This person already has two parents linked.');
+              return;
+            }
+            const childField = person.father_id == null ? 'father_id' : 'mother_id';
+            await data.setRelation(personId, childField, activeId);
+          } else {
+            await data.setRelation(activeId, pendingLink.field, personId);
+          }
+        } catch (err) {
+          console.error('Link failed:', err.message);
+        }
+        pendingLink = null;
+        ui.toggleElement(linkMenu);
+        renderFamily();
+      });
+      list.appendChild(li);
+    });
+}
+
+// ───────────────────────────────────────────────────────────────────────────
 
 function populateEditMenu() {
   editMenu.querySelector('#firstInput').value      = data.active.first;

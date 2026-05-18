@@ -29,6 +29,26 @@
         </div>
       </div>
 
+      <!-- WEB SEARCH OVERLAY -->
+      <div id="webSearchMenu" style="display:none;">
+        <button type="button" id="webSearchCancel">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+        <span class="websearch-eyebrow">Searching for</span>
+        <p id="websearch-name">Firstname Surname</p>
+        <p id="websearch-dates">1800 – 1900</p>
+        <div class="websearch-grid">
+          <a id="ws-google" class="websearch-btn" href="#" target="_blank">
+            <i class="fa-brands fa-google"></i>
+            <span>Google</span>
+          </a>
+          <a id="ws-familysearch" class="websearch-btn" href="#" target="_blank">
+            <img src="/src/img/familysearch.svg" alt="" />
+            <span>FamilySearch</span>
+          </a>
+        </div>
+      </div>
+
       <!-- EDIT OVERLAY -->
       <form id="editMenu" style="display:none;">
         <button type="button" id="editCancel" title="Cancel">
@@ -77,6 +97,7 @@
         </div>
 
         <div class="edit-actions">
+          <div id="delete-btn">Delete</div>
           <div id="save-btn">Save</div>
         </div>
       </form>
@@ -124,8 +145,54 @@
       <!-- SEARCH RESULTS -->
       <ul id="results"></ul>
 
-      <!-- SPACER -->
-      <div class="spacer"></div>
+      <!-- FAMILY -->
+      <div id="family">
+
+        <div class="fam-section">
+          <span class="fam-label">Parents</span>
+          <div class="fam-parents">
+            <div id="slot-father" class="fam-slot"></div>
+            <div id="slot-mother" class="fam-slot"></div>
+          </div>
+        </div>
+
+        <div class="fam-section">
+          <span class="fam-label">Siblings</span>
+          <div class="fam-row" id="row-siblings"></div>
+        </div>
+
+        <div class="fam-section">
+          <div class="fam-section-head">
+            <span class="fam-label">Children</span>
+            <button id="btn-add-child" class="fam-attach-btn" title="Attach child">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </div>
+          <div class="fam-row" id="row-children"></div>
+        </div>
+
+      </div>
+
+      <!-- LINK OVERLAY -->
+      <div id="linkMenu" style="display:none;">
+        <div class="link-topbar">
+          <span id="link-title">Attach</span>
+          <button id="linkCancel" title="Cancel">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="link-search-row">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="linkInput" placeholder="Search ancestors…" autocomplete="off" spellcheck="false" />
+        </div>
+        <ul id="linkResults"></ul>
+        <div class="link-footer">
+          <button id="link-add-new">
+            <i class="fa-solid fa-user-plus"></i>
+            <span>Create new person</span>
+          </button>
+        </div>
+      </div>
 
       <!-- TOOLBAR -->
       <div id="toolbar">
