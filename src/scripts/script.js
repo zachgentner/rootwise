@@ -65,9 +65,6 @@ document.getElementById('linkCancel').addEventListener('click', () => {
   ui.toggleElement(linkMenu);
 });
 
-document.getElementById('btn-add-child').addEventListener('click', () => {
-  openLinkOverlay('child', 'Attach Child');
-});
 
 document.getElementById('link-add-new').addEventListener('click', () => {
   const savedLink  = pendingLink;
@@ -81,7 +78,7 @@ document.getElementById('link-add-new').addEventListener('click', () => {
   editMenu.querySelectorAll('input[type="text"]').forEach((el) => { el.value = ''; });
 
   if (savedLink) {
-    pendingNewLink = { field: savedLink.field, originId };
+    pendingNewLink = { field: savedLink.field, originId, spouseId: savedLink.spouseId ?? null };
   }
 
   const { first, middle, surname } = parseSearchName(rawQuery);
@@ -153,6 +150,26 @@ input.addEventListener('focus', () => {
   input.addEventListener('input', () => {
     results.innerHTML = '';
     ui.filterResults(data.searchByName(input.value), input.value, results);
+    if (results.children.length === 0 && input.value.trim()) {
+      const li = document.createElement('li');
+      li.className = 'result-create-new';
+      li.innerHTML = '<i class="fa-solid fa-user-plus"></i><span>Create new person</span>';
+      li.addEventListener('click', () => {
+        const query = input.value.trim();
+        results.innerHTML = '';
+        results.style.display = 'none';
+        input.value = '';
+        isAddingNew = true;
+        deleteBtn.style.display = 'none';
+        editMenu.querySelectorAll('input[type="text"]').forEach((el) => { el.value = ''; });
+        const { first, middle, surname } = parseSearchName(query);
+        if (first)   editMenu.querySelector('#firstInput').value   = first;
+        if (middle)  editMenu.querySelector('#middleInput').value  = middle;
+        if (surname) editMenu.querySelector('#surnameInput').value = surname;
+        ui.toggleElement(editMenu);
+      });
+      results.appendChild(li);
+    }
   });
 
   input.addEventListener('blur', () => {
@@ -171,13 +188,6 @@ edit.addEventListener('click', () => {
   ui.toggleElement(editMenu);
 });
 
-document.getElementById('add').addEventListener('click', (e) => {
-  e.preventDefault();
-  isAddingNew = true;
-  editMenu.querySelectorAll('input[type="text"]').forEach((el) => { el.value = ''; });
-  deleteBtn.style.display = 'none';
-  ui.toggleElement(editMenu);
-});
 
 saveBtn.addEventListener('click', async () => {
   const updatedPerson = {
@@ -200,9 +210,12 @@ saveBtn.addEventListener('click', async () => {
     if (isAddingNew) {
       id = await data.createPerson(updatedPerson);
       if (pendingNewLink) {
-        const { field, originId } = pendingNewLink;
+        const { field, originId, spouseId } = pendingNewLink;
         if (field === 'child') {
           await data.setRelation(String(id), 'father_id', originId);
+          if (spouseId) await data.setRelation(String(id), 'mother_id', spouseId);
+        } else if (field === 'spouse') {
+          await data.addSpouse(originId, String(id));
         } else {
           await data.setRelation(originId, field, String(id));
         }
@@ -328,8 +341,175 @@ function renderFamily() {
   const { father, mother } = data.getParents(activeId);
   renderParentSlot(document.getElementById('slot-father'), father, 'father_id', 'Father');
   renderParentSlot(document.getElementById('slot-mother'), mother, 'mother_id', 'Mother');
-  renderRelationRow(document.getElementById('row-siblings'), data.getSiblings(activeId));
-  renderRelationRow(document.getElementById('row-children'), data.getChildren(activeId));
+  renderSiblingSection(document.getElementById('row-siblings'), data.getSiblings(activeId));
+  renderSpouses();
+}
+
+function renderSpouses() {
+  const container = document.getElementById('section-spouses');
+  container.innerHTML = '';
+  const activeId = data.findId(data.active);
+  const spouses  = data.active.spouses || [];
+
+  const head = document.createElement('div');
+  head.className = 'fam-section-head';
+  const label = document.createElement('span');
+  label.className = 'fam-label';
+  label.textContent = 'Spouses & Children';
+  const addSpouseBtn = document.createElement('button');
+  addSpouseBtn.className = 'fam-attach-btn';
+  addSpouseBtn.title = 'Add spouse';
+  addSpouseBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
+  addSpouseBtn.addEventListener('click', () => openLinkOverlay('spouse', 'Attach Spouse'));
+  head.appendChild(label);
+  head.appendChild(addSpouseBtn);
+  container.appendChild(head);
+
+  spouses.forEach((entry) => {
+    const spouseId = String(entry.id);
+    const spouse   = data.findById(spouseId);
+    if (!spouse) return;
+    container.appendChild(buildSpouseBlock(activeId, spouseId, spouse, entry.marriage_year || '', false));
+  });
+
+  data.getCoParents(activeId).forEach((coParentId) => {
+    const coParent = data.findById(coParentId);
+    if (!coParent) return;
+    container.appendChild(buildSpouseBlock(activeId, coParentId, coParent, '', true));
+  });
+
+  const orphans = data.getChildrenForRelation(activeId, null);
+  if (orphans.length > 0) {
+    const block = document.createElement('div');
+    block.className = 'spouse-block';
+    const card = document.createElement('div');
+    card.className = 'spouse-card spouse-card--static';
+    const meta = document.createElement('div');
+    meta.className = 'spouse-card-meta';
+    const roleEl = document.createElement('span');
+    roleEl.className = 'spouse-card-role';
+    roleEl.textContent = 'Unknown spouse';
+    meta.appendChild(roleEl);
+    card.appendChild(meta);
+    block.appendChild(card);
+    block.appendChild(buildChildrenSection(activeId, null, orphans));
+    container.appendChild(block);
+  }
+
+  if (spouses.length === 0 && data.getCoParents(activeId).length === 0 && orphans.length === 0) {
+    const none = document.createElement('span');
+    none.className = 'fam-none';
+    none.textContent = '—';
+    container.appendChild(none);
+  }
+}
+
+function buildSpouseBlock(activeId, spouseId, spouse, marriageYear, isCoParent) {
+  const block = document.createElement('div');
+  block.className = 'spouse-block';
+
+  const card = document.createElement('div');
+  card.className = 'spouse-card';
+  card.addEventListener('click', () => { data.setActive(spouseId); renderActive(); });
+
+  const meta = document.createElement('div');
+  meta.className = 'spouse-card-meta';
+
+  const roleEl = document.createElement('span');
+  roleEl.className = 'spouse-card-role';
+  roleEl.textContent = isCoParent ? 'Co-parent' : 'Spouse';
+  meta.appendChild(roleEl);
+
+  const yearRow = document.createElement('div');
+  yearRow.className = 'spouse-year-row';
+  const mLabel = document.createElement('span');
+  mLabel.className = 'spouse-m-label';
+  mLabel.textContent = 'm.';
+  const yearInput = document.createElement('input');
+  yearInput.type = 'text';
+  yearInput.className = 'spouse-year-input';
+  yearInput.placeholder = 'yyyy';
+  yearInput.maxLength = 4;
+  yearInput.value = marriageYear;
+  yearInput.addEventListener('click', (e) => e.stopPropagation());
+  yearInput.addEventListener('change', async () => {
+    const year = yearInput.value.trim();
+    try {
+      if (isCoParent) {
+        await data.addSpouse(activeId, spouseId);
+        if (year) await data.updateMarriageYear(activeId, spouseId, year);
+        renderFamily();
+      } else {
+        await data.updateMarriageYear(activeId, spouseId, year);
+      }
+    } catch (err) { console.error('Save marriage year failed:', err.message); }
+  });
+  yearRow.appendChild(mLabel);
+  yearRow.appendChild(yearInput);
+
+  card.appendChild(meta);
+
+  const nameEl = document.createElement('span');
+  nameEl.className = 'spouse-card-name';
+  nameEl.textContent = personName({ ...spouse, _id: spouseId });
+  card.appendChild(nameEl);
+
+  const bottomRow = document.createElement('div');
+  bottomRow.className = 'spouse-bottom-row';
+  const sub = personSubline(spouse);
+  if (sub) {
+    const subEl = document.createElement('span');
+    subEl.className = 'spouse-card-sub';
+    subEl.textContent = sub;
+    bottomRow.appendChild(subEl);
+  }
+  bottomRow.appendChild(yearRow);
+  card.appendChild(bottomRow);
+
+  const unlinkBtn = document.createElement('button');
+  unlinkBtn.className = 'fam-unlink';
+  unlinkBtn.title = isCoParent ? 'Remove co-parent link' : 'Unlink spouse';
+  unlinkBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+  unlinkBtn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    try {
+      if (isCoParent) {
+        await data.removeCoParent(activeId, spouseId);
+      } else {
+        await data.removeSpouse(activeId, spouseId);
+      }
+      renderFamily();
+    } catch (err) { console.error('Remove failed:', err.message); }
+  });
+  card.appendChild(unlinkBtn);
+
+  block.appendChild(card);
+  block.appendChild(buildChildrenSection(activeId, spouseId, data.getChildrenForRelation(activeId, spouseId)));
+
+  return block;
+}
+
+function buildChildrenSection(activeId, spouseId, children) {
+  const section = document.createElement('div');
+  section.className = 'spouse-children-section';
+  children.forEach((child) => {
+    const chip = document.createElement('button');
+    chip.className = 'fam-chip';
+    chip.textContent = personName(child);
+    chip.title = personName(child);
+    chip.addEventListener('click', () => { data.setActive(child._id); renderActive(); });
+    section.appendChild(chip);
+  });
+  const addBtn = document.createElement('button');
+  addBtn.className = 'fam-attach-btn';
+  addBtn.title = 'Add child';
+  addBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
+  addBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openLinkOverlay('child', 'Attach Child', spouseId);
+  });
+  section.appendChild(addBtn);
+  return section;
 }
 
 function renderParentSlot(container, relation, field, label) {
@@ -337,15 +517,25 @@ function renderParentSlot(container, relation, field, label) {
   if (relation) {
     const card = document.createElement('div');
     card.className = 'fam-card';
-    card.innerHTML = `
-      <span class="fam-card-role">${label}</span>
-      <span class="fam-card-name">${personName(relation)}</span>
-      ${personSubline(relation) ? `<span class="fam-card-sub">${personSubline(relation)}</span>` : ''}
-    `;
-    card.addEventListener('click', () => {
-      data.setActive(relation._id);
-      renderActive();
-    });
+    card.addEventListener('click', () => { data.setActive(relation._id); renderActive(); });
+
+    const roleEl = document.createElement('span');
+    roleEl.className = 'fam-card-role';
+    roleEl.textContent = label;
+    card.appendChild(roleEl);
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'fam-card-name';
+    nameEl.textContent = personName(relation);
+    card.appendChild(nameEl);
+
+    const sub = personSubline(relation);
+    if (sub) {
+      const subEl = document.createElement('span');
+      subEl.className = 'fam-card-sub';
+      subEl.textContent = sub;
+      card.appendChild(subEl);
+    }
 
     const unlink = document.createElement('button');
     unlink.className = 'fam-unlink';
@@ -371,24 +561,21 @@ function renderParentSlot(container, relation, field, label) {
   }
 }
 
-function renderRelationRow(container, relations) {
+function renderSiblingSection(container, siblings) {
   container.innerHTML = '';
-  if (!relations.length) {
+  if (!siblings.length) {
     const note = document.createElement('span');
     note.className = 'fam-none';
     note.textContent = '—';
     container.appendChild(note);
     return;
   }
-  relations.forEach((person) => {
+  siblings.forEach((person) => {
     const chip = document.createElement('button');
     chip.className = 'fam-chip';
     chip.textContent = personName(person);
     chip.title = personName(person);
-    chip.addEventListener('click', () => {
-      data.setActive(person._id);
-      renderActive();
-    });
+    chip.addEventListener('click', () => { data.setActive(person._id); renderActive(); });
     container.appendChild(chip);
   });
 }
@@ -416,8 +603,8 @@ function personSubline(person) {
   return [person.birth, person.death].filter(Boolean).join(' – ');
 }
 
-function openLinkOverlay(field, title) {
-  pendingLink = { field };
+function openLinkOverlay(field, title, spouseId = null) {
+  pendingLink = { field, spouseId };
   document.getElementById('link-title').textContent = title;
   document.getElementById('linkInput').value = '';
   const status = document.getElementById('link-status');
@@ -449,7 +636,9 @@ function populateLinkResults(query) {
         statusEl.textContent = '';
         delete statusEl.dataset.state;
         try {
-          if (pendingLink.field === 'child') {
+          if (pendingLink.field === 'spouse') {
+            await data.addSpouse(activeId, personId);
+          } else if (pendingLink.field === 'child') {
             if (person.father_id != null && person.mother_id != null) {
               statusEl.textContent = 'This person already has two parents linked.';
               statusEl.dataset.state = 'error';
@@ -457,6 +646,13 @@ function populateLinkResults(query) {
             }
             const childField = person.father_id == null ? 'father_id' : 'mother_id';
             await data.setRelation(personId, childField, activeId);
+            if (pendingLink.spouseId != null) {
+              const otherField = childField === 'father_id' ? 'mother_id' : 'father_id';
+              const updated = data.findById(personId);
+              if (updated && updated[otherField] == null) {
+                await data.setRelation(personId, otherField, pendingLink.spouseId);
+              }
+            }
           } else {
             await data.setRelation(activeId, pendingLink.field, personId);
           }
@@ -467,7 +663,7 @@ function populateLinkResults(query) {
           console.error('Link failed:', err);
           statusEl.textContent = err.message || 'Save failed — check the browser console.';
           statusEl.dataset.state = 'error';
-          renderFamily(); // still reflect the optimistic update visually
+          renderFamily();
         }
       });
       list.appendChild(li);

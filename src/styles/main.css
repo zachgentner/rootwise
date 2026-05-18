@@ -517,6 +517,20 @@ main {
 
 .fam-slot { flex: 1; min-width: 0; }
 
+.fam-siblings-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-top: 6px;
+  margin-top: 6px;
+  border-top: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+  min-height: 32px;
+}
+
+.fam-siblings-row::-webkit-scrollbar { display: none; }
+
 /* Filled card */
 .fam-card {
   width: 100%;
@@ -668,6 +682,119 @@ main {
   color: var(--text-sub);
   opacity: 0.45;
 }
+
+/* ─── SPOUSE BLOCKS ──────────────────────────────── */
+
+.spouse-block {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.spouse-card {
+  background: var(--surface);
+  padding: 7px 9px;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.spouse-card:hover { background: var(--amber-glow); }
+
+.spouse-card--static { cursor: default; }
+.spouse-card--static:hover { background: var(--surface); }
+
+.spouse-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 3px;
+}
+
+.spouse-card-role {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+
+.spouse-card-name {
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.spouse-card-sub {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: var(--text-sub);
+}
+
+.spouse-card:hover .fam-unlink { color: var(--text-sub); }
+
+.spouse-bottom-row {
+  display: flex;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.spouse-year-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+}
+
+.spouse-m-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: var(--text-sub);
+}
+
+.spouse-year-input {
+  width: 4ch;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  padding: 1px 0;
+  text-align: center;
+  transition: border-color 0.15s;
+}
+
+.spouse-year-input:focus {
+  outline: none;
+  border-bottom-color: var(--amber);
+}
+
+.spouse-year-input::placeholder { color: var(--text-sub); }
+
+.spouse-children-section {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 9px;
+  background: var(--surface-2);
+  border-top: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+  min-height: 36px;
+}
+
+.spouse-children-section::-webkit-scrollbar { display: none; }
 
 /* ─── LINK OVERLAY ───────────────────────────────── */
 
@@ -1095,6 +1222,17 @@ main {
 #results li:hover {
   background: var(--amber-dim);
   color: var(--text);
+}
+
+#results .result-create-new {
+  color: var(--amber);
+  gap: 7px;
+  font-style: italic;
+}
+
+#results .result-create-new:hover {
+  background: var(--amber-dim);
+  color: var(--amber-hi);
 }
 
 /* ─── SPACER ─────────────────────────────────────── */

@@ -43,6 +43,7 @@ export async function initialize() {
         myheritage:   row.myheritage   || '',
         notes:        row.notes        || '',
         links:        row.links        || [],
+        spouses:      Array.isArray(row.spouses) ? row.spouses : [],
         father_id:    row.father_id    ?? null,
         mother_id:    row.mother_id    ?? null,
         _dbId:        row.id,
@@ -146,6 +147,101 @@ export function getSiblings(personId) {
              (person.mother_id != null && p.mother_id === person.mother_id);
     })
     .map(([id, p]) => ({ _id: id, ...p }));
+}
+
+// Save the spouses array for a person.
+export async function saveSpouses(internalId, spouses) {
+  const { data: { user } } = await supabase.auth.getUser();
+  const { error } = await supabase
+    .from('ancestors')
+    .update({ spouses })
+    .eq('user_id', user.id)
+    .eq('internal_id', parseInt(internalId, 10));
+  if (error) throw error;
+  if (ids[internalId]) ids[internalId].spouses = spouses;
+}
+
+// Link two people as spouses (bidirectional).
+export async function addSpouse(personId, spouseId) {
+  const person = ids[personId];
+  const spouse = ids[spouseId];
+  if (!person || !spouse) return;
+  const pList = [...(person.spouses || [])];
+  const sList = [...(spouse.spouses || [])];
+  if (!pList.find((s) => String(s.id) === String(spouseId)))
+    pList.push({ id: parseInt(spouseId, 10), marriage_year: '' });
+  if (!sList.find((s) => String(s.id) === String(personId)))
+    sList.push({ id: parseInt(personId, 10), marriage_year: '' });
+  await saveSpouses(personId, pList);
+  await saveSpouses(spouseId, sList);
+}
+
+// Remove a spouse link (bidirectional).
+export async function removeSpouse(personId, spouseId) {
+  const person = ids[personId];
+  const spouse = ids[spouseId];
+  if (person) await saveSpouses(personId, (person.spouses || []).filter((s) => String(s.id) !== String(spouseId)));
+  if (spouse) await saveSpouses(spouseId, (spouse.spouses || []).filter((s) => String(s.id) !== String(personId)));
+}
+
+// Remove a co-parent by clearing their parent role from all shared children.
+export async function removeCoParent(personId, coParentId) {
+  const numId = parseInt(personId, 10);
+  const numCoId = parseInt(coParentId, 10);
+  const sharedChildren = Object.entries(ids).filter(([, p]) =>
+    (p.father_id === numId && p.mother_id === numCoId) ||
+    (p.mother_id === numId && p.father_id === numCoId)
+  );
+  for (const [childId, child] of sharedChildren) {
+    const field = child.father_id === numCoId ? 'father_id' : 'mother_id';
+    await setRelation(childId, field, null);
+  }
+}
+
+// Update marriage year on both sides of the relationship.
+export async function updateMarriageYear(personId, spouseId, year) {
+  const patch = (list) => list.map((s) =>
+    String(s.id) === String(spouseId) ? { ...s, marriage_year: year } : s
+  );
+  const patchOther = (list) => list.map((s) =>
+    String(s.id) === String(personId) ? { ...s, marriage_year: year } : s
+  );
+  if (ids[personId]) await saveSpouses(personId, patch(ids[personId].spouses || []));
+  if (ids[spouseId]) await saveSpouses(spouseId, patchOther(ids[spouseId].spouses || []));
+}
+
+// Return children for a specific relationship.
+// spouseId = null returns orphaned children (other parent not in spouse list).
+export function getChildrenForRelation(personId, spouseId) {
+  const numId = parseInt(personId, 10);
+  if (spouseId != null) {
+    const numSpouseId = parseInt(spouseId, 10);
+    return Object.entries(ids)
+      .filter(([, p]) =>
+        (p.father_id === numId && p.mother_id === numSpouseId) ||
+        (p.mother_id === numId && p.father_id === numSpouseId)
+      )
+      .map(([id, p]) => ({ _id: id, ...p }));
+  }
+  return Object.entries(ids)
+    .filter(([, p]) => {
+      if (p.father_id !== numId && p.mother_id !== numId) return false;
+      const otherId = p.father_id === numId ? p.mother_id : p.father_id;
+      return otherId == null;
+    })
+    .map(([id, p]) => ({ _id: id, ...p }));
+}
+
+// Return internal IDs of people who share children with personId but are not in the formal spouses list.
+export function getCoParents(personId) {
+  const numId = parseInt(personId, 10);
+  const formalIds = new Set((ids[personId]?.spouses || []).map((s) => String(s.id)));
+  const coParentIds = new Set();
+  Object.values(ids).forEach((p) => {
+    if (p.father_id === numId && p.mother_id != null) coParentIds.add(String(p.mother_id));
+    if (p.mother_id === numId && p.father_id != null) coParentIds.add(String(p.father_id));
+  });
+  return [...coParentIds].filter((id) => !formalIds.has(id));
 }
 
 // Return children: people whose father_id or mother_id equals the given person's id.
