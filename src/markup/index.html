@@ -96,6 +96,7 @@
           <input type="text" id="myheritageInput" />
         </div>
 
+        <p id="edit-status"></p>
         <div class="edit-actions">
           <div id="delete-btn">Delete</div>
           <div id="save-btn">Save</div>
@@ -187,9 +188,29 @@
         </div>
         <ul id="linkResults"></ul>
         <div class="link-footer">
+          <p id="link-status"></p>
           <button id="link-add-new">
             <i class="fa-solid fa-user-plus"></i>
             <span>Create new person</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- URLS OVERLAY -->
+      <div id="urlsMenu" style="display:none;">
+        <div class="link-topbar">
+          <span class="link-topbar-title">Links</span>
+          <button id="urlsCancel" title="Close">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <ul id="urls-list"></ul>
+        <div class="urls-add-form">
+          <input type="url" id="url-input" placeholder="https://…" autocomplete="off" spellcheck="false" />
+          <input type="text" id="url-label-input" placeholder="Label (optional)" autocomplete="off" spellcheck="false" />
+          <button id="url-add-btn">
+            <i class="fa-solid fa-plus"></i>
+            <span>Add link</span>
           </button>
         </div>
       </div>
@@ -210,6 +231,9 @@
         </button>
         <button id="notes" title="Notes">
           <a class="link" href="#"><i class="fa-regular fa-clipboard"></i></a>
+        </button>
+        <button id="links" title="Links">
+          <a class="link" href="#"><i class="fa-solid fa-link"></i></a>
         </button>
         <button id="reports" title="Reports">
           <a class="link" href="#"><i class="fa-solid fa-chart-pie"></i></a>

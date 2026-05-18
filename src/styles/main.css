@@ -352,6 +352,17 @@ main {
   border-color: var(--amber);
 }
 
+#edit-status {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: var(--text-sub);
+  margin-top: 8px;
+  line-height: 1.4;
+}
+
+#edit-status:empty { display: none; }
+#edit-status[data-state="error"] { color: var(--red); }
+
 .edit-actions {
   display: flex;
   justify-content: center;
@@ -768,7 +779,22 @@ main {
   padding: 9px 13px;
   border-top: 1px solid var(--border);
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
+
+#link-status {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: var(--text-sub);
+  min-height: 0;
+  line-height: 1.4;
+}
+
+#link-status:empty { display: none; }
+#link-status[data-state="error"] { color: var(--red); }
+#link-status[data-state="ok"]    { color: var(--amber); }
 
 #link-add-new {
   display: flex;
@@ -794,6 +820,169 @@ main {
 }
 
 #link-add-new i { font-size: 11px; }
+
+/* ─── URLS OVERLAY ───────────────────────────────── */
+
+#urlsMenu {
+  position: absolute;
+  inset: 0;
+  z-index: 200;
+  background: rgba(237, 233, 225, 0.97);
+  backdrop-filter: blur(6px);
+  display: flex;
+  flex-direction: column;
+}
+
+.link-topbar-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--chrome-text);
+}
+
+#urlsCancel {
+  width: 24px;
+  height: 24px;
+  background: var(--chrome-2);
+  border: 1px solid var(--chrome-border);
+  border-radius: 5px;
+  color: var(--chrome-sub);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  transition: color 0.15s, background 0.15s;
+}
+
+#urlsCancel:hover { color: var(--red); background: var(--red-dim); }
+
+#urls-list {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+#urls-list::-webkit-scrollbar       { width: 3px; }
+#urls-list::-webkit-scrollbar-track { background: transparent; }
+#urls-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.url-item {
+  display: flex;
+  align-items: center;
+  padding: 9px 13px;
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+  transition: background 0.1s;
+}
+
+.url-item:last-child { border-bottom: none; }
+.url-item:hover { background: var(--surface); }
+
+.url-item-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-decoration: none;
+}
+
+.url-item-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.url-item:hover .url-item-title { color: var(--amber); }
+
+.url-item-href {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: var(--text-sub);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.url-item-delete {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: transparent;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.url-item:hover .url-item-delete { color: var(--text-sub); border-color: var(--border); }
+.url-item-delete:hover { color: var(--red) !important; border-color: var(--red) !important; background: var(--red-dim); }
+
+.urls-empty {
+  display: block;
+  padding: 20px 13px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--text-sub);
+  opacity: 0.5;
+  text-align: center;
+}
+
+.urls-add-form {
+  padding: 10px 13px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.urls-add-form input {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  padding: 6px 9px;
+  border-radius: 5px;
+  transition: border-color 0.15s;
+}
+
+.urls-add-form input:focus {
+  outline: none;
+  border-color: var(--amber);
+}
+
+.urls-add-form input::placeholder { color: var(--text-sub); }
+
+#url-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  background: var(--amber);
+  color: var(--surface);
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px;
+  border-radius: 5px;
+  transition: background 0.15s;
+}
+
+#url-add-btn:hover { background: var(--amber-hi); }
+#url-add-btn i { font-size: 10px; }
 
 /* ─── SEARCH ─────────────────────────────────────── */
 

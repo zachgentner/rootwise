@@ -42,6 +42,7 @@ export async function initialize() {
         findagrave:   row.findagrave   || '',
         myheritage:   row.myheritage   || '',
         notes:        row.notes        || '',
+        links:        row.links        || [],
         father_id:    row.father_id    ?? null,
         mother_id:    row.mother_id    ?? null,
         _dbId:        row.id,
@@ -53,27 +54,46 @@ export async function initialize() {
   if (firstId) active = ids[firstId];
 }
 
-// Upsert a person to Supabase and update local cache.
+// Insert a new person into Supabase and update local cache. Returns the new internal id.
+export async function createPerson(personData) {
+  const internalId = nextId();
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: row, error } = await supabase.from('ancestors').insert({
+    user_id:      user.id,
+    internal_id:  internalId,
+    first:        personData.first,
+    middle:       personData.middle,
+    surname:      personData.surname,
+    maiden:       personData.maiden,
+    birth:        personData.birth,
+    death:        personData.death,
+    ancestry:     personData.ancestry,
+    familysearch: personData.familysearch,
+    findagrave:   personData.findagrave,
+    myheritage:   personData.myheritage,
+  }).select().single();
+  if (error) throw error;
+  ids[internalId] = { ...personData, notes: '', links: [], father_id: null, mother_id: null, _dbId: row.id };
+  return internalId;
+}
+
+// Update an existing person in Supabase and update local cache.
 export async function savePerson(internalId, personData) {
   const { data: { user } } = await supabase.auth.getUser();
-  const { error } = await supabase.from('ancestors').upsert(
-    {
-      user_id:      user.id,
-      internal_id:  parseInt(internalId, 10),
-      first:        personData.first,
-      middle:       personData.middle,
-      surname:      personData.surname,
-      maiden:       personData.maiden,
-      birth:        personData.birth,
-      death:        personData.death,
-      ancestry:     personData.ancestry,
-      familysearch: personData.familysearch,
-      findagrave:   personData.findagrave,
-      myheritage:   personData.myheritage,
-      notes:        personData.notes,
-    },
-    { onConflict: 'user_id,internal_id' }
-  );
+  const { error } = await supabase.from('ancestors').update({
+    first:        personData.first,
+    middle:       personData.middle,
+    surname:      personData.surname,
+    maiden:       personData.maiden,
+    birth:        personData.birth,
+    death:        personData.death,
+    ancestry:     personData.ancestry,
+    familysearch: personData.familysearch,
+    findagrave:   personData.findagrave,
+    myheritage:   personData.myheritage,
+  })
+    .eq('user_id', user.id)
+    .eq('internal_id', parseInt(internalId, 10));
   if (error) throw error;
   ids[internalId] = { ...ids[internalId], ...personData, _dbId: ids[internalId]?._dbId };
 }
@@ -88,6 +108,18 @@ export async function saveNotes(internalId, notes) {
     .eq('internal_id', parseInt(internalId, 10));
   if (error) throw error;
   if (ids[internalId]) ids[internalId].notes = notes;
+}
+
+// Save the links array for a person.
+export async function saveLinks(internalId, links) {
+  const { data: { user } } = await supabase.auth.getUser();
+  const { error } = await supabase
+    .from('ancestors')
+    .update({ links })
+    .eq('user_id', user.id)
+    .eq('internal_id', parseInt(internalId, 10));
+  if (error) throw error;
+  if (ids[internalId]) ids[internalId].links = links;
 }
 
 // Return { father, mother } for a given person (by internal id string).
@@ -126,15 +158,24 @@ export function getChildren(personId) {
 
 // Set or clear a relation field (father_id | mother_id) on any person.
 export async function setRelation(personId, field, relativeId) {
-  const { data: { user } } = await supabase.auth.getUser();
   const val = relativeId != null ? parseInt(relativeId, 10) : null;
+  const prev = ids[personId]?.[field] ?? null;
+
+  // Optimistic local update so the UI reflects the change immediately.
+  if (ids[personId]) ids[personId][field] = val;
+
+  const { data: { user } } = await supabase.auth.getUser();
   const { error } = await supabase
     .from('ancestors')
     .update({ [field]: val })
     .eq('user_id', user.id)
     .eq('internal_id', parseInt(personId, 10));
-  if (error) throw error;
-  if (ids[personId]) ids[personId][field] = val;
+
+  if (error) {
+    // Revert the local cache on failure.
+    if (ids[personId]) ids[personId][field] = prev;
+    throw error;
+  }
 }
 
 // Delete a person from Supabase and remove from local cache.
@@ -253,6 +294,11 @@ export function findByExternalId(externalId, website) {
     }
   }
   return undefined;
+}
+
+export function nextId() {
+  const keys = Object.keys(ids).map(Number).filter((n) => !isNaN(n));
+  return keys.length > 0 ? Math.max(...keys) + 1 : 1;
 }
 
 export function setActive(id) {

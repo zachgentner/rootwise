@@ -10,8 +10,10 @@ const edit = document.getElementById('edit');
 const editMenu = document.getElementById('editMenu');
 const webSearchMenu = document.getElementById('webSearchMenu');
 const linkMenu      = document.getElementById('linkMenu');
+const urlsMenu      = document.getElementById('urlsMenu');
 
-let pendingLink = null; // { field: 'father_id' | 'mother_id' | 'child', label: string }
+let pendingLink  = null; // { field: 'father_id' | 'mother_id' | 'child' }
+let isAddingNew  = false;
 const saveBtn = document.getElementById('save-btn');
 const deleteBtn = document.getElementById('delete-btn');
 const cancelBtn = document.getElementById('editCancel');
@@ -40,9 +42,10 @@ window.addEventListener('load', async () => {
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
-    if (linkMenu.style.display !== 'none')      { pendingLink = null; ui.toggleElement(linkMenu); }
-    else if (editMenu.style.display !== 'none')  ui.toggleElement(editMenu);
-    else if (webSearchMenu.style.display !== 'none') ui.toggleElement(webSearchMenu);
+    if (linkMenu.style.display !== 'none')           { pendingLink = null; ui.toggleElement(linkMenu); }
+    else if (editMenu.style.display !== 'none')       ui.toggleElement(editMenu);
+    else if (webSearchMenu.style.display !== 'none')  ui.toggleElement(webSearchMenu);
+    else if (urlsMenu.style.display !== 'none')       ui.toggleElement(urlsMenu);
   }
 });
 
@@ -68,12 +71,42 @@ document.getElementById('btn-add-child').addEventListener('click', () => {
 document.getElementById('link-add-new').addEventListener('click', () => {
   pendingLink = null;
   ui.toggleElement(linkMenu);
+  isAddingNew = true;
+  deleteBtn.style.display = 'none';
   editMenu.querySelectorAll('input[type="text"]').forEach((el) => { el.value = ''; });
   ui.toggleElement(editMenu);
 });
 
 document.getElementById('linkInput').addEventListener('input', (e) => {
   populateLinkResults(e.target.value);
+});
+
+document.getElementById('links').querySelector('a').addEventListener('click', (e) => {
+  e.preventDefault();
+  populateUrlsMenu();
+  ui.toggleElement(urlsMenu);
+});
+
+document.getElementById('urlsCancel').addEventListener('click', () => {
+  ui.toggleElement(urlsMenu);
+});
+
+document.getElementById('url-add-btn').addEventListener('click', async () => {
+  const urlInput   = document.getElementById('url-input');
+  const labelInput = document.getElementById('url-label-input');
+  const url = urlInput.value.trim();
+  if (!url) return;
+  const title = labelInput.value.trim();
+  const id    = data.findId(data.active);
+  const links = [...(data.active.links || []), { title, url }];
+  try {
+    await data.saveLinks(id, links);
+    urlInput.value   = '';
+    labelInput.value = '';
+    populateUrlsMenu();
+  } catch (err) {
+    console.error('Save link failed:', err.message);
+  }
 });
 
 document.getElementById('notes').querySelector('a').addEventListener('click', (e) => {
@@ -112,12 +145,17 @@ input.addEventListener('focus', () => {
 });
 
 edit.addEventListener('click', () => {
-  ui.toggleElement(editMenu);
+  isAddingNew = false;
+  deleteBtn.style.display = '';
   populateEditMenu();
+  ui.toggleElement(editMenu);
 });
 
 document.getElementById('add').addEventListener('click', (e) => {
   e.preventDefault();
+  isAddingNew = true;
+  editMenu.querySelectorAll('input[type="text"]').forEach((el) => { el.value = ''; });
+  deleteBtn.style.display = 'none';
   ui.toggleElement(editMenu);
 });
 
@@ -135,15 +173,24 @@ saveBtn.addEventListener('click', async () => {
     myheritage:   editMenu.querySelector('#myheritageInput').value,
   };
 
-  const id = data.findId(data.active);
+  const editStatus = document.getElementById('edit-status');
+  editStatus.textContent = '';
   try {
-    await data.savePerson(id, updatedPerson);
+    let id;
+    if (isAddingNew) {
+      id = await data.createPerson(updatedPerson);
+    } else {
+      id = data.findId(data.active);
+      await data.savePerson(id, updatedPerson);
+    }
     data.setActive(id);
     renderActive();
+    isAddingNew = false;
+    ui.toggleElement(editMenu);
   } catch (err) {
-    console.error('Save failed:', err.message);
+    editStatus.textContent = err.message || 'Save failed.';
+    editStatus.dataset.state = 'error';
   }
-  ui.toggleElement(editMenu);
 });
 
 deleteBtn.addEventListener('click', async () => {
@@ -152,6 +199,7 @@ deleteBtn.addEventListener('click', async () => {
   if (!confirm('Delete this ancestor? This cannot be undone.')) return;
   try {
     await data.deletePerson(id);
+    isAddingNew = false;
     ui.toggleElement(editMenu);
     if (data.active) renderActive();
   } catch (err) {
@@ -160,6 +208,8 @@ deleteBtn.addEventListener('click', async () => {
 });
 
 cancelBtn.addEventListener('click', () => {
+  isAddingNew = false;
+  deleteBtn.style.display = '';
   ui.toggleElement(editMenu);
 });
 
@@ -322,6 +372,9 @@ function openLinkOverlay(field, title) {
   pendingLink = { field };
   document.getElementById('link-title').textContent = title;
   document.getElementById('linkInput').value = '';
+  const status = document.getElementById('link-status');
+  status.textContent = '';
+  delete status.dataset.state;
   populateLinkResults('');
   ui.toggleElement(linkMenu);
   setTimeout(() => document.getElementById('linkInput').focus(), 50);
@@ -344,10 +397,14 @@ function populateLinkResults(query) {
       `;
       li.addEventListener('click', async () => {
         if (!pendingLink) return;
+        const statusEl = document.getElementById('link-status');
+        statusEl.textContent = '';
+        delete statusEl.dataset.state;
         try {
           if (pendingLink.field === 'child') {
             if (person.father_id != null && person.mother_id != null) {
-              alert('This person already has two parents linked.');
+              statusEl.textContent = 'This person already has two parents linked.';
+              statusEl.dataset.state = 'error';
               return;
             }
             const childField = person.father_id == null ? 'father_id' : 'mother_id';
@@ -355,18 +412,70 @@ function populateLinkResults(query) {
           } else {
             await data.setRelation(activeId, pendingLink.field, personId);
           }
+          pendingLink = null;
+          ui.toggleElement(linkMenu);
+          renderFamily();
         } catch (err) {
-          console.error('Link failed:', err.message);
+          console.error('Link failed:', err);
+          statusEl.textContent = err.message || 'Save failed — check the browser console.';
+          statusEl.dataset.state = 'error';
+          renderFamily(); // still reflect the optimistic update visually
         }
-        pendingLink = null;
-        ui.toggleElement(linkMenu);
-        renderFamily();
       });
       list.appendChild(li);
     });
 }
 
 // ───────────────────────────────────────────────────────────────────────────
+
+function populateUrlsMenu() {
+  const list  = document.getElementById('urls-list');
+  list.innerHTML = '';
+  const links = data.active.links || [];
+
+  if (!links.length) {
+    const empty = document.createElement('li');
+    empty.className = 'urls-empty';
+    empty.textContent = 'No links yet.';
+    list.appendChild(empty);
+    return;
+  }
+
+  links.forEach((link, i) => {
+    const li      = document.createElement('li');
+    li.className  = 'url-item';
+
+    const anchor  = document.createElement('a');
+    anchor.href   = link.url;
+    anchor.target = '_blank';
+    anchor.rel    = 'noopener noreferrer';
+    anchor.className = 'url-item-body';
+    anchor.innerHTML = `
+      <span class="url-item-title">${link.title || link.url}</span>
+      <span class="url-item-href">${link.url}</span>
+    `;
+
+    const del = document.createElement('button');
+    del.className = 'url-item-delete';
+    del.title     = 'Remove';
+    del.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+    del.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const id      = data.findId(data.active);
+      const updated = (data.active.links || []).filter((_, idx) => idx !== i);
+      try {
+        await data.saveLinks(id, updated);
+        populateUrlsMenu();
+      } catch (err) {
+        console.error('Delete link failed:', err.message);
+      }
+    });
+
+    li.appendChild(anchor);
+    li.appendChild(del);
+    list.appendChild(li);
+  });
+}
 
 function populateEditMenu() {
   editMenu.querySelector('#firstInput').value      = data.active.first;
