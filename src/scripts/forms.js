@@ -1,6 +1,7 @@
 import { supabase } from './supabase.js';
 import { getSession } from './auth.js';
 import { reformatDate, DEFAULT_FORMAT } from './dates.js';
+import { normalizePlace } from './places.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   const session = await getSession();
@@ -14,6 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('back-btn').addEventListener('click', () => { location.href = './index.html'; });
   document.getElementById('save-settings').addEventListener('click', saveSettings);
   document.getElementById('upload').addEventListener('submit', handleUpload);
+  document.getElementById('normalize-btn').addEventListener('click', normalizeAllData);
 
   document.getElementById('create-tree-btn').addEventListener('click', createTree);
   document.getElementById('new-tree-name').addEventListener('keydown', (e) => {
@@ -115,6 +117,61 @@ async function reformatAllDates(oldFormat, newFormat) {
         .eq('id', row.id);
     }
   }
+}
+
+// ─── BULK NORMALIZATION ───────────────────────────────────────────────────────
+
+async function normalizeAllData() {
+  const btn    = document.getElementById('normalize-btn');
+  const status = document.getElementById('save-status');
+  btn.disabled = true;
+  status.textContent = 'Normalizing…';
+  delete status.dataset.state;
+
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: ancestors, error } = await supabase
+    .from('ancestors')
+    .select('id, birth, death, birth_place, death_place')
+    .eq('user_id', user.id);
+
+  if (error || !ancestors?.length) {
+    status.textContent = error ? 'Error loading records.' : 'No records found.';
+    status.dataset.state = 'error';
+    btn.disabled = false;
+    return;
+  }
+
+  let updated = 0;
+  for (const row of ancestors) {
+    const newBirth      = reformatDate(row.birth,       currentDateFormat);
+    const newDeath      = reformatDate(row.death,       currentDateFormat);
+    const newBirthPlace = normalizePlace(row.birth_place);
+    const newDeathPlace = normalizePlace(row.death_place);
+
+    const changed =
+      newBirth      !== (row.birth       || '') ||
+      newDeath      !== (row.death       || '') ||
+      newBirthPlace !== (row.birth_place || '') ||
+      newDeathPlace !== (row.death_place || '');
+
+    if (changed) {
+      await supabase
+        .from('ancestors')
+        .update({
+          birth:       newBirth      || null,
+          death:       newDeath      || null,
+          birth_place: newBirthPlace || null,
+          death_place: newDeathPlace || null,
+        })
+        .eq('id', row.id);
+      updated++;
+    }
+  }
+
+  status.textContent = `Updated ${updated} of ${ancestors.length} record${ancestors.length !== 1 ? 's' : ''}.`;
+  status.dataset.state = 'ok';
+  setTimeout(() => { status.textContent = ''; delete status.dataset.state; }, 3000);
+  btn.disabled = false;
 }
 
 // ─── TREE MANAGEMENT ──────────────────────────────────────────────────────────

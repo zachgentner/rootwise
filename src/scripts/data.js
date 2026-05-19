@@ -52,12 +52,13 @@ export async function initialize() {
         familysearch: row.familysearch || '',
         findagrave:   row.findagrave   || '',
         myheritage:   row.myheritage   || '',
-        notes:        row.notes        || '',
-        links:        row.links        || [],
-        tasks:        Array.isArray(row.tasks)   ? row.tasks   : [],
-        photos:       Array.isArray(row.photos)  ? row.photos  : [],
-        spouses:      Array.isArray(row.spouses) ? row.spouses : [],
-        sources:      Array.isArray(row.sources) ? row.sources : [],
+        notes:             row.notes             || '',
+        links:             row.links             || [],
+        tasks:             Array.isArray(row.tasks)             ? row.tasks             : [],
+        photos:            Array.isArray(row.photos)            ? row.photos            : [],
+        spouses:           Array.isArray(row.spouses)           ? row.spouses           : [],
+        sources:           Array.isArray(row.sources)           ? row.sources           : [],
+        events:            Array.isArray(row.events) ? row.events : [],
         father_id:    row.father_id    ?? null,
         mother_id:    row.mother_id    ?? null,
         _dbId:        row.id,
@@ -103,7 +104,7 @@ export async function createPerson(personData) {
     myheritage:   personData.myheritage,
   }).select().single();
   if (error) throw error;
-  ids[internalId] = { ...personData, notes: '', links: [], tasks: [], photos: [], spouses: [], sources: [], father_id: null, mother_id: null, _dbId: row.id };
+  ids[internalId] = { ...personData, notes: '', links: [], tasks: [], photos: [], spouses: [], sources: [], events: [], father_id: null, mother_id: null, _dbId: row.id };
   return internalId;
 }
 
@@ -150,6 +151,18 @@ export async function saveNotes(internalId, notes) {
     .eq('internal_id', parseInt(internalId, 10));
   if (error) throw error;
   if (ids[internalId]) ids[internalId].notes = notes;
+}
+
+// Save the events array for a person.
+export async function saveEvents(internalId, events) {
+  const { data: { user } } = await supabase.auth.getUser();
+  const { error } = await supabase
+    .from('ancestors')
+    .update({ events })
+    .eq('user_id', user.id)
+    .eq('internal_id', parseInt(internalId, 10));
+  if (error) throw error;
+  if (ids[internalId]) ids[internalId].events = events;
 }
 
 // Save the tasks array for a person.

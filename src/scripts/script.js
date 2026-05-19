@@ -2,6 +2,7 @@ import * as data from './data.js';
 import * as ui from './ui.js';
 import { getSession, signOut } from './auth.js';
 import { reformatDate, extractYear, formatPlaceholder, parseDate, formatDate } from './dates.js';
+import { normalizePlace, parsePlace, formatPlace, geocodeCounty } from './places.js';
 
 const info = document.getElementById('info');
 const quicklinks = document.getElementById('quicklinks');
@@ -17,6 +18,7 @@ const notesMenu     = document.getElementById('notesMenu');
 const notesInput    = document.getElementById('notes-input');
 const notesStatus   = document.getElementById('notes-status');
 const tasksMenu     = document.getElementById('tasksMenu');
+const healthMenu    = document.getElementById('healthMenu');
 const photosMenu    = document.getElementById('photosMenu');
 
 let notesOpen = false;
@@ -24,6 +26,7 @@ let notesSaveTimer = null;
 let linksOpen = false;
 let sourcesOpen = false;
 let tasksOpen = false;
+let healthOpen = false;
 let webSearchOpen = false;
 let photosOpen = false;
 let completedCollapsed = true;
@@ -58,6 +61,29 @@ function attachDateValidation(input) {
 
 attachDateValidation(editMenu.querySelector('#birthInput'));
 attachDateValidation(editMenu.querySelector('#deathInput'));
+attachDateValidation(document.getElementById('health-date-input'));
+
+function attachPlaceNormalization(input) {
+  input.addEventListener('blur', async () => {
+    const val = input.value.trim();
+    if (!val) return;
+
+    const normalized = normalizePlace(val);
+    input.value = normalized;
+
+    const parts = parsePlace(normalized);
+    if (!parts) return;
+
+    const county = await geocodeCounty(parts);
+    if (!county) return;
+    if (parts.some((p) => p.toLowerCase() === county.toLowerCase())) return;
+
+    input.value = formatPlace([parts[0], county, ...parts.slice(1)]);
+  });
+}
+
+attachPlaceNormalization(editMenu.querySelector('#birthPlaceInput'));
+attachPlaceNormalization(editMenu.querySelector('#deathPlaceInput'));
 
 window.addEventListener('load', async () => {
   const session = await getSession();
@@ -79,14 +105,20 @@ window.addEventListener('load', async () => {
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
-    if (linkMenu.style.display !== 'none')           { pendingLink = null; ui.toggleElement(linkMenu); }
-    else if (editMenu.style.display !== 'none')       ui.toggleElement(editMenu);
-    else if (photosOpen)                              closePhotos();
-    else if (sourcesOpen)                             closeSources();
-    else if (linksOpen)                               closeLinks();
-    else if (tasksOpen)                               closeTasks();
-    else if (webSearchOpen)                           closeWebSearch();
-    else if (notesOpen)                               closeNotes();
+    if (linkMenu.style.display !== 'none')                                        { pendingLink = null; ui.toggleElement(linkMenu); }
+    else if (editMenu.style.display !== 'none')                                    ui.toggleElement(editMenu);
+    else if (document.getElementById('sourceAddMenu').style.display    !== 'none') closeSourceAdd();
+    else if (document.getElementById('photoAddMenu').style.display     !== 'none') closePhotoAdd();
+    else if (document.getElementById('urlAddMenu').style.display       !== 'none') closeUrlAdd();
+    else if (document.getElementById('webSearchAddMenu').style.display !== 'none') closeWebSearchAdd();
+    else if (document.getElementById('healthAddMenu').style.display    !== 'none') closeHealthAdd();
+    else if (photosOpen)                                                            closePhotos();
+    else if (sourcesOpen)                                                           closeSources();
+    else if (linksOpen)                                                             closeLinks();
+    else if (tasksOpen)                                                             closeTasks();
+    else if (healthOpen)                                                            closeHealth();
+    else if (webSearchOpen)                                                         closeWebSearch();
+    else if (notesOpen)                                                             closeNotes();
   }
 });
 
@@ -144,7 +176,11 @@ document.getElementById('links').querySelector('a').addEventListener('click', (e
 });
 
 
-document.getElementById('url-add-btn').addEventListener('click', async () => {
+document.getElementById('url-add-btn').addEventListener('click', openUrlAdd);
+document.getElementById('urlAddCancel').addEventListener('click', closeUrlAdd);
+document.getElementById('url-save-btn').addEventListener('click', addUrl);
+
+async function addUrl() {
   const urlInput   = document.getElementById('url-input');
   const labelInput = document.getElementById('url-label-input');
   const url = urlInput.value.trim();
@@ -154,13 +190,23 @@ document.getElementById('url-add-btn').addEventListener('click', async () => {
   const links = [...(data.active.links || []), { title, url }];
   try {
     await data.saveLinks(id, links);
-    urlInput.value   = '';
-    labelInput.value = '';
+    closeUrlAdd();
     populateUrlsMenu();
   } catch (err) {
     console.error('Save link failed:', err.message);
   }
-});
+}
+
+function openUrlAdd() {
+  document.getElementById('url-input').value       = '';
+  document.getElementById('url-label-input').value = '';
+  document.getElementById('urlAddMenu').style.display = 'flex';
+  document.getElementById('url-input').focus();
+}
+
+function closeUrlAdd() {
+  document.getElementById('urlAddMenu').style.display = 'none';
+}
 
 document.getElementById('notes').querySelector('a').addEventListener('click', (e) => {
   e.preventDefault();
@@ -186,6 +232,7 @@ function openNotes() {
   if (sourcesOpen) closeSources();
   if (linksOpen) closeLinks();
   if (tasksOpen) closeTasks();
+  if (healthOpen) closeHealth();
   if (webSearchOpen) closeWebSearch();
   notesOpen = true;
   quicklinks.style.display = 'none';
@@ -212,6 +259,7 @@ function openLinks() {
   if (sourcesOpen) closeSources();
   if (notesOpen) closeNotes();
   if (tasksOpen) closeTasks();
+  if (healthOpen) closeHealth();
   if (webSearchOpen) closeWebSearch();
   linksOpen = true;
   quicklinks.style.display = 'none';
@@ -223,6 +271,7 @@ function openLinks() {
 }
 
 function closeLinks() {
+  closeUrlAdd();
   linksOpen = false;
   urlsMenu.style.display = 'none';
   quicklinks.style.display = '';
@@ -237,6 +286,7 @@ function openSources() {
   if (notesOpen) closeNotes();
   if (linksOpen) closeLinks();
   if (tasksOpen) closeTasks();
+  if (healthOpen) closeHealth();
   if (webSearchOpen) closeWebSearch();
   sourcesOpen = true;
   quicklinks.style.display = 'none';
@@ -248,6 +298,7 @@ function openSources() {
 }
 
 function closeSources() {
+  closeSourceAdd();
   sourcesOpen = false;
   sourcesMenu.style.display = 'none';
   quicklinks.style.display = '';
@@ -338,39 +389,48 @@ function populateSourcesMenu() {
   sources.forEach((source, i) => list.appendChild(buildSourceItem(source, i)));
 }
 
-document.getElementById('source-add-btn').addEventListener('click', addSource);
-document.getElementById('source-title-input').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') addSource();
-});
+document.getElementById('source-add-btn').addEventListener('click', openSourceAdd);
+document.getElementById('sourceAddCancel').addEventListener('click', closeSourceAdd);
+document.getElementById('source-save-btn').addEventListener('click', addSource);
+
+function openSourceAdd() {
+  document.getElementById('source-title-input').value = '';
+  document.getElementById('source-repo-input').value  = '';
+  document.getElementById('source-url-input').value   = '';
+  document.getElementById('source-date-input').value  = '';
+  document.getElementById('source-notes-input').value = '';
+  document.getElementById('sourceAddMenu').style.display = 'flex';
+  document.getElementById('source-title-input').focus();
+}
+
+function closeSourceAdd() {
+  document.getElementById('sourceAddMenu').style.display = 'none';
+}
 
 async function addSource() {
-  const titleInput = document.getElementById('source-title-input');
-  const repoInput  = document.getElementById('source-repo-input');
-  const urlInput   = document.getElementById('source-url-input');
-  const dateInput  = document.getElementById('source-date-input');
+  const titleInput  = document.getElementById('source-title-input');
+  const repoInput   = document.getElementById('source-repo-input');
+  const urlInput    = document.getElementById('source-url-input');
+  const dateInput   = document.getElementById('source-date-input');
   const notesInput2 = document.getElementById('source-notes-input');
 
   const title = titleInput.value.trim();
   if (!title) return;
 
   const source = {
-    id:           Date.now(),
+    id:            Date.now(),
     title,
-    repository:   repoInput.value.trim(),
-    url:          urlInput.value.trim(),
+    repository:    repoInput.value.trim(),
+    url:           urlInput.value.trim(),
     date_accessed: dateInput.value.trim(),
-    notes:        notesInput2.value.trim(),
+    notes:         notesInput2.value.trim(),
   };
 
   const id = data.findId(data.active);
   const updated = [...(data.active.sources || []), source];
   try {
     await data.saveSources(id, updated);
-    titleInput.value  = '';
-    repoInput.value   = '';
-    urlInput.value    = '';
-    dateInput.value   = '';
-    notesInput2.value = '';
+    closeSourceAdd();
     populateSourcesMenu();
   } catch (err) {
     console.error('Add source failed:', err.message);
@@ -407,6 +467,7 @@ function openTasks() {
   if (sourcesOpen) closeSources();
   if (notesOpen) closeNotes();
   if (linksOpen) closeLinks();
+  if (healthOpen) closeHealth();
   if (webSearchOpen) closeWebSearch();
   tasksOpen = true;
   quicklinks.style.display = 'none';
@@ -426,12 +487,210 @@ function closeTasks() {
   document.getElementById('tasks').classList.remove('toolbar-btn--active');
 }
 
+// ── Health panel ──────────────────────────────────────────────────────────────
+
+document.getElementById('health').querySelector('a').addEventListener('click', (e) => {
+  e.preventDefault();
+  healthOpen ? closeHealth() : openHealth();
+});
+
+document.getElementById('health-add-btn').addEventListener('click', openHealthAdd);
+document.getElementById('healthAddCancel').addEventListener('click', closeHealthAdd);
+document.getElementById('health-save-btn').addEventListener('click', addHealthCondition);
+
+document.getElementById('health-cod-input').addEventListener('blur', async () => {
+  const val     = document.getElementById('health-cod-input').value.trim();
+  const events  = data.active.events || [];
+  const existing = events.find((e) => e.type === 'cause_of_death');
+  if (val === (existing?.title || '')) return;
+
+  let updated;
+  if (!val) {
+    updated = events.filter((e) => e.type !== 'cause_of_death');
+  } else if (existing) {
+    updated = events.map((e) => e.type === 'cause_of_death' ? { ...e, title: val } : e);
+  } else {
+    updated = [...events, {
+      id:    Date.now(),
+      type:  'cause_of_death',
+      title: val,
+      date:  data.active.death       || '',
+      place: data.active.death_place || '',
+      notes: '',
+      data:  {},
+    }];
+  }
+
+  const id = data.findId(data.active);
+  try {
+    await data.saveEvents(id, updated);
+  } catch (err) {
+    console.error('Save cause of death failed:', err.message);
+  }
+});
+
+function openHealth() {
+  if (photosOpen) closePhotos();
+  if (sourcesOpen) closeSources();
+  if (notesOpen) closeNotes();
+  if (linksOpen) closeLinks();
+  if (tasksOpen) closeTasks();
+  if (webSearchOpen) closeWebSearch();
+  healthOpen = true;
+  quicklinks.style.display = 'none';
+  search.style.display = 'none';
+  document.getElementById('family').style.display = 'none';
+  populateHealthMenu();
+  healthMenu.style.display = 'flex';
+  document.getElementById('health').classList.add('toolbar-btn--active');
+}
+
+function closeHealth() {
+  healthOpen = false;
+  healthMenu.style.display = 'none';
+  quicklinks.style.display = '';
+  search.style.display = '';
+  document.getElementById('family').style.display = '';
+  document.getElementById('health').classList.remove('toolbar-btn--active');
+}
+
+function openHealthAdd() {
+  document.getElementById('health-condition-input').value = '';
+  document.getElementById('health-date-input').value = '';
+  document.getElementById('health-notes-input').value = '';
+  document.getElementById('healthAddMenu').style.display = 'flex';
+  document.getElementById('health-condition-input').focus();
+}
+
+function closeHealthAdd() {
+  document.getElementById('healthAddMenu').style.display = 'none';
+}
+
+function buildHealthItem(item) {
+  const li = document.createElement('li');
+  li.className = 'health-item';
+
+  const body = document.createElement('div');
+  body.className = 'health-item-body';
+
+  const titleEl = document.createElement('span');
+  titleEl.className = 'health-item-condition';
+  titleEl.textContent = item.title;
+  body.appendChild(titleEl);
+
+  if (item.date) {
+    const dateEl = document.createElement('span');
+    dateEl.className = 'health-item-date';
+    dateEl.textContent = item.date;
+    body.appendChild(dateEl);
+  }
+
+  if (item.place) {
+    const placeEl = document.createElement('span');
+    placeEl.className = 'health-item-notes';
+    placeEl.textContent = item.place;
+    body.appendChild(placeEl);
+  }
+
+  if (item.notes) {
+    const notesEl = document.createElement('span');
+    notesEl.className = 'health-item-notes';
+    notesEl.textContent = item.notes;
+    body.appendChild(notesEl);
+  }
+
+  li.appendChild(body);
+
+  const del = document.createElement('button');
+  del.className = 'health-item-delete';
+  del.title = 'Remove';
+  del.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+  del.addEventListener('click', async (e) => {
+    e.preventDefault();
+    const personId = data.findId(data.active);
+    const updated = (data.active.events || []).filter((ev) => ev.id !== item.id);
+    try {
+      await data.saveEvents(personId, updated);
+      populateHealthMenu();
+    } catch (err) {
+      console.error('Delete health event failed:', err.message);
+    }
+  });
+  li.appendChild(del);
+
+  return li;
+}
+
+function populateHealthMenu() {
+  const hasDeath = !!data.active.death;
+  const codRow   = document.querySelector('.health-cod-row');
+  codRow.style.display = hasDeath ? '' : 'none';
+
+  const events       = data.active.events || [];
+  const cod          = events.find((e) => e.type === 'cause_of_death');
+  const healthEvents = events
+    .filter((e) => e.type === 'health')
+    .sort((a, b) => {
+      const pa = parseDate(a.date), pb = parseDate(b.date);
+      if (!pa && !pb) return 0;
+      if (!pa) return 1;
+      if (!pb) return -1;
+      return (pa.year - pb.year) || ((pa.month ?? 0) - (pb.month ?? 0)) || ((pa.day ?? 0) - (pb.day ?? 0));
+    });
+
+  document.getElementById('health-cod-input').value = cod?.title || '';
+
+  const list = document.getElementById('health-list');
+  list.innerHTML = '';
+
+  if (!healthEvents.length) {
+    const empty = document.createElement('li');
+    empty.className = 'health-empty';
+    empty.textContent = 'No health events recorded.';
+    list.appendChild(empty);
+    return;
+  }
+
+  healthEvents.forEach((item) => list.appendChild(buildHealthItem(item)));
+}
+
+async function addHealthCondition() {
+  const conditionInput = document.getElementById('health-condition-input');
+  const dateInput      = document.getElementById('health-date-input');
+  const notesInput3    = document.getElementById('health-notes-input');
+
+  const condition = conditionInput.value.trim();
+  if (!condition) return;
+
+  const item = {
+    id:    Date.now(),
+    type:  'health',
+    title: condition,
+    date:  reformatDate(dateInput.value.trim(), data.dateFormat),
+    place: '',
+    notes: notesInput3.value.trim(),
+    data:  {},
+  };
+
+  const id = data.findId(data.active);
+  const updated = [...(data.active.events || []), item];
+  try {
+    await data.saveEvents(id, updated);
+    closeHealthAdd();
+    populateHealthMenu();
+  } catch (err) {
+    console.error('Add health event failed:', err.message);
+  }
+}
+
+
 function openWebSearch() {
   if (photosOpen) closePhotos();
   if (sourcesOpen) closeSources();
   if (notesOpen) closeNotes();
   if (linksOpen) closeLinks();
   if (tasksOpen) closeTasks();
+  if (healthOpen) closeHealth();
   webSearchOpen = true;
   quicklinks.style.display = 'none';
   search.style.display = 'none';
@@ -442,6 +701,7 @@ function openWebSearch() {
 }
 
 function closeWebSearch() {
+  closeWebSearchAdd();
   webSearchOpen = false;
   webSearchMenu.style.display = 'none';
   quicklinks.style.display = '';
@@ -455,6 +715,7 @@ function openPhotos() {
   if (notesOpen) closeNotes();
   if (linksOpen) closeLinks();
   if (tasksOpen) closeTasks();
+  if (healthOpen) closeHealth();
   if (webSearchOpen) closeWebSearch();
   photosOpen = true;
   quicklinks.style.display = 'none';
@@ -466,6 +727,7 @@ function openPhotos() {
 }
 
 function closePhotos() {
+  closePhotoAdd();
   photosOpen = false;
   photosMenu.style.display = 'none';
   quicklinks.style.display = '';
@@ -535,10 +797,20 @@ function populatePhotosMenu() {
   });
 }
 
-document.getElementById('photo-add-btn').addEventListener('click', addPhoto);
-document.getElementById('photo-url-input').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') addPhoto();
-});
+document.getElementById('photo-add-btn').addEventListener('click', openPhotoAdd);
+document.getElementById('photoAddCancel').addEventListener('click', closePhotoAdd);
+document.getElementById('photo-save-btn').addEventListener('click', addPhoto);
+
+function openPhotoAdd() {
+  document.getElementById('photo-url-input').value     = '';
+  document.getElementById('photo-caption-input').value = '';
+  document.getElementById('photoAddMenu').style.display = 'flex';
+  document.getElementById('photo-url-input').focus();
+}
+
+function closePhotoAdd() {
+  document.getElementById('photoAddMenu').style.display = 'none';
+}
 
 async function addPhoto() {
   const urlInput = document.getElementById('photo-url-input');
@@ -550,8 +822,7 @@ async function addPhoto() {
   const photos = [...(data.active.photos || []), { id: Date.now(), url, caption }];
   try {
     await data.savePhotos(id, photos);
-    urlInput.value = '';
-    capInput.value = '';
+    closePhotoAdd();
     populatePhotosMenu();
     updateProfilePhoto();
   } catch (err) {
@@ -811,8 +1082,8 @@ saveBtn.addEventListener('click', async () => {
     maiden:       editMenu.querySelector('#maidenInput').value,
     birth:        reformatDate(editMenu.querySelector('#birthInput').value.trim(), data.dateFormat),
     death:        reformatDate(editMenu.querySelector('#deathInput').value.trim(), data.dateFormat),
-    birth_place:  editMenu.querySelector('#birthPlaceInput').value,
-    death_place:  editMenu.querySelector('#deathPlaceInput').value,
+    birth_place:  normalizePlace(editMenu.querySelector('#birthPlaceInput').value.trim()),
+    death_place:  normalizePlace(editMenu.querySelector('#deathPlaceInput').value.trim()),
     ancestry:     editMenu.querySelector('#ancestryInput').value,
     familysearch: editMenu.querySelector('#familysearchInput').value,
     findagrave:   editMenu.querySelector('#findagraveInput').value,
@@ -1035,15 +1306,28 @@ function populateWebSearch() {
   });
 }
 
-document.getElementById('websearch-add-btn').addEventListener('click', addSearchLink);
-document.getElementById('websearch-url-input').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') addSearchLink();
-});
+document.getElementById('websearch-add-btn').addEventListener('click', openWebSearchAdd);
+document.getElementById('webSearchAddCancel').addEventListener('click', closeWebSearchAdd);
+document.getElementById('websearch-save-btn').addEventListener('click', addSearchLink);
 document.getElementById('websearch-url-input').addEventListener('input', () => {
   const raw = document.getElementById('websearch-url-input').value.trim();
   const preview = document.getElementById('websearch-preview');
   preview.textContent = raw ? detectUrlTemplate(raw) : '';
 });
+
+function openWebSearchAdd() {
+  document.getElementById('websearch-label-input').value = '';
+  document.getElementById('websearch-url-input').value   = '';
+  document.getElementById('websearch-preview').textContent = '';
+  document.getElementById('websearch-status').textContent  = '';
+  delete document.getElementById('websearch-status').dataset.state;
+  document.getElementById('webSearchAddMenu').style.display = 'flex';
+  document.getElementById('websearch-label-input').focus();
+}
+
+function closeWebSearchAdd() {
+  document.getElementById('webSearchAddMenu').style.display = 'none';
+}
 
 function getFaviconUrl(urlTemplate) {
   try {
@@ -1101,9 +1385,7 @@ async function addSearchLink() {
   delete statusEl.dataset.state;
   try {
     await data.saveSearchLinks(updated);
-    labelInput.value = '';
-    urlInput.value   = '';
-    document.getElementById('websearch-preview').textContent = '';
+    closeWebSearchAdd();
     populateWebSearch();
   } catch (err) {
     statusEl.textContent = err.message || 'Save failed.';

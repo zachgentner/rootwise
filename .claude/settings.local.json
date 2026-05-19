@@ -19,7 +19,9 @@
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
       "Read(//mnt/c/Program Files/Mozilla Firefox/**)",
-      "Read(//mnt/c/Program Files \\(x86\\)/Mozilla Firefox/**)"
+      "Read(//mnt/c/Program Files \\(x86\\)/Mozilla Firefox/**)",
+      "Bash(xargs grep -l \"parsePlace\\\\|normalizePlace\\\\|LocationParser\\\\|PlaceParser\")",
+      "Bash(findstr /i \"error\\\\|warning\\\\|compiled\")"
     ]
   }
 }

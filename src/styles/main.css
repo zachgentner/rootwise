@@ -232,52 +232,6 @@ main {
 .websearch-item:hover .websearch-item-delete { opacity: 1; }
 .websearch-item-delete:hover { color: var(--red); }
 
-.websearch-add-form {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 8px 13px;
-  border-top: 1px solid var(--border);
-  flex-shrink: 0;
-}
-
-.websearch-add-row {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.websearch-add-form input {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 5px 8px;
-  font-family: inherit;
-  font-size: 12px;
-  color: var(--text);
-  outline: none;
-  width: 100%;
-  transition: border-color 0.15s;
-}
-
-.websearch-add-form input:focus { border-color: var(--amber); }
-
-#websearch-add-btn {
-  width: 26px;
-  height: 26px;
-  min-width: 26px;
-  background: var(--amber);
-  border-radius: 5px;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  transition: background 0.15s;
-}
-
-#websearch-add-btn:hover { background: var(--amber-hi); }
-
 .websearch-hint {
   font-size: 11px;
   color: var(--text-sub);
@@ -418,7 +372,8 @@ main {
   margin-top: 12px;
 }
 
-#save-btn, #delete-btn {
+#save-btn, #delete-btn,
+#health-save-btn, #source-save-btn, #url-save-btn, #photo-save-btn, #websearch-save-btn {
   font-family: 'Outfit', sans-serif;
   font-weight: 600;
   font-size: 12px;
@@ -431,12 +386,15 @@ main {
   text-align: center;
 }
 
-#save-btn {
+#save-btn,
+#health-save-btn, #source-save-btn, #url-save-btn, #photo-save-btn, #websearch-save-btn {
   background: var(--amber);
   color: #f7f4ef;
 }
 
-#save-btn:hover { background: var(--amber-hi); }
+#save-btn:hover,
+#health-save-btn:hover, #source-save-btn:hover, #url-save-btn:hover,
+#photo-save-btn:hover, #websearch-save-btn:hover { background: var(--amber-hi); }
 
 #delete-btn {
   background: transparent;
@@ -1110,52 +1068,6 @@ main {
   text-align: center;
 }
 
-.urls-add-form {
-  padding: 10px 13px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.urls-add-form input {
-  width: 100%;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  color: var(--text);
-  font-family: 'Outfit', sans-serif;
-  font-size: 12px;
-  padding: 6px 9px;
-  border-radius: 5px;
-  transition: border-color 0.15s;
-}
-
-.urls-add-form input:focus {
-  outline: none;
-  border-color: var(--amber);
-}
-
-.urls-add-form input::placeholder { color: var(--text-sub); }
-
-#url-add-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  background: var(--amber);
-  color: var(--surface);
-  font-family: 'Outfit', sans-serif;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 7px;
-  border-radius: 5px;
-  transition: background 0.15s;
-}
-
-#url-add-btn:hover { background: var(--amber-hi); }
-#url-add-btn i { font-size: 10px; }
 
 /* ─── SOURCES PANEL ──────────────────────────────── */
 
@@ -1253,54 +1165,6 @@ main {
 .source-item:hover .source-item-delete { opacity: 1; }
 .source-item-delete:hover { color: var(--red); }
 
-.sources-add-form {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 8px 13px;
-  border-top: 1px solid var(--border);
-  flex-shrink: 0;
-}
-
-.sources-add-form input,
-.sources-add-form textarea {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 5px 8px;
-  font-family: inherit;
-  font-size: 12px;
-  color: var(--text);
-  outline: none;
-  width: 100%;
-  transition: border-color 0.15s;
-  resize: none;
-}
-
-.sources-add-form input::placeholder,
-.sources-add-form textarea::placeholder { color: var(--text-sub); }
-
-.sources-add-form input:focus,
-.sources-add-form textarea:focus { border-color: var(--amber); }
-
-#source-add-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  background: var(--amber);
-  color: var(--surface);
-  font-family: 'Outfit', sans-serif;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 7px;
-  border-radius: 5px;
-  transition: background 0.15s;
-}
-
-#source-add-btn:hover { background: var(--amber-hi); }
-#source-add-btn i { font-size: 10px; }
 
 /* ─── DUPLICATE DETECTION ────────────────────────── */
 
@@ -1950,52 +1814,6 @@ main {
   padding: 0 2px;
 }
 
-.photos-add-form {
-  padding: 10px 13px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.photos-add-form input {
-  width: 100%;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  color: var(--text);
-  font-family: 'Outfit', sans-serif;
-  font-size: 12px;
-  padding: 6px 9px;
-  border-radius: 5px;
-  transition: border-color 0.15s;
-}
-
-.photos-add-form input:focus {
-  outline: none;
-  border-color: var(--amber);
-}
-
-.photos-add-form input::placeholder { color: var(--text-sub); }
-
-#photo-add-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  background: var(--amber);
-  color: var(--surface);
-  font-family: 'Outfit', sans-serif;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 7px;
-  border-radius: 5px;
-  transition: background 0.15s;
-}
-
-#photo-add-btn:hover { background: var(--amber-hi); }
-#photo-add-btn i { font-size: 10px; }
 
 /* ─── NOTES PANEL ───────────────────────────────── */
 
@@ -2484,6 +2302,247 @@ main {
   color: var(--red);
   min-height: 14px;
   text-align: center;
+}
+
+/* ─── HEALTH PANEL ──────────────────────────────── */
+
+#healthMenu {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.health-section-label {
+  display: block;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--amber);
+  padding: 8px 13px 4px;
+  flex-shrink: 0;
+}
+
+/* Cause of death row */
+.health-cod-row {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.health-cod-row .health-section-label {
+  padding-bottom: 4px;
+}
+
+#health-cod-input {
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  padding: 8px 13px;
+  outline: none;
+  width: 100%;
+  transition: background 0.15s;
+}
+
+#health-cod-input::placeholder { color: var(--text-sub); }
+#health-cod-input:focus { background: var(--surface); }
+
+/* Health events list */
+#health-list {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+#health-list::-webkit-scrollbar       { width: 3px; }
+#health-list::-webkit-scrollbar-track { background: transparent; }
+#health-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.health-empty {
+  padding: 16px 13px;
+  font-size: 12px;
+  color: var(--text-sub);
+}
+
+.health-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 10px 13px;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+
+.health-item:last-child { border-bottom: none; }
+.health-item:hover { background: var(--surface); }
+
+.health-item-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.health-item-condition {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.health-item-date {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--amber);
+}
+
+.health-item-notes {
+  font-size: 11px;
+  color: var(--text-sub);
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.health-item-delete {
+  width: 18px;
+  height: 18px;
+  background: transparent;
+  color: var(--text-sub);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+  margin-top: 2px;
+}
+
+.health-item:hover .health-item-delete { opacity: 1; }
+.health-item-delete:hover { color: var(--red); }
+
+/* Add form */
+.health-add-form {
+  padding: 8px 13px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+#health-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  background: var(--amber);
+  color: var(--surface);
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px;
+  border-radius: 5px;
+  transition: background 0.15s;
+}
+
+#health-add-btn:hover { background: var(--amber-hi); }
+#health-add-btn i { font-size: 10px; }
+
+/* ─── SHARED ADD OVERLAYS ────────────────────────── */
+
+.panel-add-bar {
+  padding: 8px 13px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.panel-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  background: var(--amber);
+  color: var(--surface);
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px;
+  border-radius: 5px;
+  transition: background 0.15s;
+}
+
+.panel-add-btn:hover { background: var(--amber-hi); }
+.panel-add-btn i { font-size: 10px; }
+
+.add-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 200;
+  background: rgba(237, 233, 225, 0.97);
+  backdrop-filter: blur(6px);
+  padding: 14px 13px 12px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.add-overlay-cancel {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 24px;
+  height: 24px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-sub);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.add-overlay-cancel:hover { color: var(--red); background: var(--red-dim); }
+
+.add-overlay input,
+.add-overlay textarea {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--text);
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s;
+  resize: none;
+  margin-bottom: 2px;
+}
+
+.add-overlay input:focus,
+.add-overlay textarea:focus { border-color: var(--amber); }
+
+.add-overlay input::placeholder,
+.add-overlay textarea::placeholder { color: var(--text-sub); }
+
+.add-overlay input[data-invalid="true"] {
+  border-color: var(--red) !important;
+  background: var(--red-dim);
 }
 
 /* ─── UTIL ───────────────────────────────────────── */

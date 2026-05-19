@@ -16,7 +16,8 @@
   },
   "permissions": ["activeTab", "contextMenus", "storage", "windows"],
   "host_permissions": [
-    "https://zuyeczifsofwdmpnltny.supabase.co/*"
+    "https://zuyeczifsofwdmpnltny.supabase.co/*",
+    "https://nominatim.openstreetmap.org/*"
   ],
   "background": {
     "service_worker": "/dist/scripts/background.js"

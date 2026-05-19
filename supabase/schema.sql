@@ -62,3 +62,49 @@ CREATE TRIGGER ancestors_updated_at
 CREATE TRIGGER user_settings_updated_at
   BEFORE UPDATE ON user_settings
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- EVENTS COLUMN — unified timeline (run in Supabase Dashboard → SQL Editor)
+
+-- 1. Add the new column
+ALTER TABLE ancestors ADD COLUMN IF NOT EXISTS events JSONB DEFAULT '[]';
+
+-- 2. Migrate existing cause_of_death + health_conditions into events
+UPDATE ancestors
+SET events = (
+  CASE
+    WHEN cause_of_death IS NOT NULL AND cause_of_death != ''
+    THEN jsonb_build_array(jsonb_build_object(
+      'id',    (extract(epoch from created_at) * 1000)::bigint,
+      'type',  'cause_of_death',
+      'title', cause_of_death,
+      'date',  COALESCE(death, ''),
+      'place', COALESCE(death_place, ''),
+      'notes', '',
+      'data',  '{}'::jsonb
+    ))
+    ELSE '[]'::jsonb
+  END
+  ||
+  CASE
+    WHEN health_conditions IS NOT NULL AND jsonb_array_length(health_conditions) > 0
+    THEN (
+      SELECT jsonb_agg(jsonb_build_object(
+        'id',    (elem->>'id')::bigint,
+        'type',  'health',
+        'title', COALESCE(elem->>'condition', ''),
+        'date',  COALESCE(elem->>'date', ''),
+        'place', '',
+        'notes', COALESCE(elem->>'notes', ''),
+        'data',  '{}'::jsonb
+      ))
+      FROM jsonb_array_elements(health_conditions) AS elem
+    )
+    ELSE '[]'::jsonb
+  END
+)
+WHERE (cause_of_death IS NOT NULL AND cause_of_death != '')
+   OR (health_conditions IS NOT NULL AND jsonb_array_length(health_conditions) > 0);
+
+-- 3. Drop old columns once migration is verified
+ALTER TABLE ancestors DROP COLUMN IF EXISTS cause_of_death;
+ALTER TABLE ancestors DROP COLUMN IF EXISTS health_conditions;

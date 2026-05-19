@@ -53,7 +53,7 @@
         </div>
         <div class="edit-field">
           <span class="edit-field-abbr">Place</span>
-          <input type="text" id="birthPlaceInput" placeholder="e.g. Salt Lake City, UT" />
+          <input type="text" id="birthPlaceInput" placeholder="e.g. Tecumseh, Lenawee, Michigan, United States" />
         </div>
 
         <span class="edit-label">Death</span>
@@ -63,7 +63,7 @@
         </div>
         <div class="edit-field">
           <span class="edit-field-abbr">Place</span>
-          <input type="text" id="deathPlaceInput" placeholder="e.g. Provo, UT" />
+          <input type="text" id="deathPlaceInput" placeholder="e.g. Tecumseh, Lenawee, Michigan, United States" />
         </div>
 
         <span class="edit-label">Source IDs</span>
@@ -175,31 +175,59 @@
       <!-- WEB SEARCH PANEL -->
       <div id="webSearchMenu" style="display:none;">
         <ul id="websearch-list"></ul>
-        <div class="websearch-add-form">
-          <p class="websearch-hint">Search for <strong>John Doe</strong> (b. 1/1/1900, d. 1/1/2000) on the site and paste that URL — fields are detected automatically.</p>
-          <input type="text" id="websearch-label-input" placeholder="Label" autocomplete="off" spellcheck="false" />
-          <div class="websearch-add-row">
-            <input type="text" id="websearch-url-input" placeholder="Paste URL…" autocomplete="off" spellcheck="false" />
-            <button id="websearch-add-btn"><i class="fa-solid fa-plus"></i></button>
-          </div>
-          <p id="websearch-preview" class="websearch-preview"></p>
-          <span id="websearch-status" class="websearch-status"></span>
+        <div class="panel-add-bar">
+          <button id="websearch-add-btn" class="panel-add-btn">
+            <i class="fa-solid fa-plus"></i>
+            <span>Add search</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- WEB SEARCH ADD OVERLAY -->
+      <div id="webSearchAddMenu" style="display:none;" class="add-overlay">
+        <button type="button" class="add-overlay-cancel" id="webSearchAddCancel" title="Cancel">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+        <p class="websearch-hint">Search for <strong>John Doe</strong> (b. 1/1/1900, d. 1/1/2000) on the site and paste that URL — fields are detected automatically.</p>
+        <span class="edit-label">Label</span>
+        <input type="text" id="websearch-label-input" placeholder="e.g. Ancestry, FindAGrave…" autocomplete="off" spellcheck="false" />
+        <span class="edit-label">URL</span>
+        <input type="text" id="websearch-url-input" placeholder="Paste URL…" autocomplete="off" spellcheck="false" />
+        <p id="websearch-preview" class="websearch-preview"></p>
+        <span id="websearch-status" class="websearch-status"></span>
+        <div class="edit-actions">
+          <div id="websearch-save-btn">Save</div>
         </div>
       </div>
 
       <!-- SOURCES PANEL -->
       <div id="sourcesMenu" style="display:none;">
         <ul id="sources-list"></ul>
-        <div class="sources-add-form">
-          <input type="text"  id="source-title-input"   placeholder="Title (required)…"         autocomplete="off" spellcheck="false" />
-          <input type="text"  id="source-repo-input"    placeholder="Repository (optional)…"    autocomplete="off" spellcheck="false" />
-          <input type="url"   id="source-url-input"     placeholder="URL (optional)…"           autocomplete="off" spellcheck="false" />
-          <input type="text"  id="source-date-input"    placeholder="Date accessed (optional)…" autocomplete="off" spellcheck="false" />
-          <textarea           id="source-notes-input"   placeholder="Notes (optional)…"         spellcheck="true" rows="2"></textarea>
-          <button id="source-add-btn">
+        <div class="panel-add-bar">
+          <button id="source-add-btn" class="panel-add-btn">
             <i class="fa-solid fa-plus"></i>
             <span>Add source</span>
           </button>
+        </div>
+      </div>
+
+      <!-- SOURCE ADD OVERLAY -->
+      <div id="sourceAddMenu" style="display:none;" class="add-overlay">
+        <button type="button" class="add-overlay-cancel" id="sourceAddCancel" title="Cancel">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+        <span class="edit-label">Title</span>
+        <input type="text" id="source-title-input" placeholder="Title (required)…" autocomplete="off" spellcheck="false" />
+        <span class="edit-label">Repository</span>
+        <input type="text" id="source-repo-input" placeholder="Repository (optional)…" autocomplete="off" spellcheck="false" />
+        <span class="edit-label">URL</span>
+        <input type="url" id="source-url-input" placeholder="URL (optional)…" autocomplete="off" spellcheck="false" />
+        <span class="edit-label">Date Accessed</span>
+        <input type="text" id="source-date-input" placeholder="Date accessed (optional)…" autocomplete="off" spellcheck="false" />
+        <span class="edit-label">Notes</span>
+        <textarea id="source-notes-input" placeholder="Notes (optional)…" spellcheck="true" rows="3"></textarea>
+        <div class="edit-actions">
+          <div id="source-save-btn">Save</div>
         </div>
       </div>
 
@@ -215,26 +243,50 @@
       <!-- LINKS PANEL -->
       <div id="urlsMenu" style="display:none;">
         <ul id="urls-list"></ul>
-        <div class="urls-add-form">
-          <input type="url" id="url-input" placeholder="https://…" autocomplete="off" spellcheck="false" />
-          <input type="text" id="url-label-input" placeholder="Label (optional)" autocomplete="off" spellcheck="false" />
-          <button id="url-add-btn">
+        <div class="panel-add-bar">
+          <button id="url-add-btn" class="panel-add-btn">
             <i class="fa-solid fa-plus"></i>
             <span>Add link</span>
           </button>
         </div>
       </div>
 
+      <!-- LINK ADD OVERLAY -->
+      <div id="urlAddMenu" style="display:none;" class="add-overlay">
+        <button type="button" class="add-overlay-cancel" id="urlAddCancel" title="Cancel">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+        <span class="edit-label">URL</span>
+        <input type="url" id="url-input" placeholder="https://…" autocomplete="off" spellcheck="false" />
+        <span class="edit-label">Label</span>
+        <input type="text" id="url-label-input" placeholder="Label (optional)" autocomplete="off" spellcheck="false" />
+        <div class="edit-actions">
+          <div id="url-save-btn">Save</div>
+        </div>
+      </div>
+
       <!-- PHOTOS PANEL -->
       <div id="photosMenu" style="display:none;">
         <div id="photos-grid"></div>
-        <div class="photos-add-form">
-          <input type="url" id="photo-url-input" placeholder="https://…" autocomplete="off" spellcheck="false" />
-          <input type="text" id="photo-caption-input" placeholder="Caption (optional)" autocomplete="off" spellcheck="false" />
-          <button id="photo-add-btn">
+        <div class="panel-add-bar">
+          <button id="photo-add-btn" class="panel-add-btn">
             <i class="fa-solid fa-plus"></i>
             <span>Add photo</span>
           </button>
+        </div>
+      </div>
+
+      <!-- PHOTO ADD OVERLAY -->
+      <div id="photoAddMenu" style="display:none;" class="add-overlay">
+        <button type="button" class="add-overlay-cancel" id="photoAddCancel" title="Cancel">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+        <span class="edit-label">URL</span>
+        <input type="url" id="photo-url-input" placeholder="https://…" autocomplete="off" spellcheck="false" />
+        <span class="edit-label">Caption</span>
+        <input type="text" id="photo-caption-input" placeholder="Caption (optional)" autocomplete="off" spellcheck="false" />
+        <div class="edit-actions">
+          <div id="photo-save-btn">Save</div>
         </div>
       </div>
 
@@ -243,6 +295,38 @@
         <textarea id="notes-input" placeholder="Write notes about this ancestor…" spellcheck="true"></textarea>
         <div class="notes-panel-bar">
           <span id="notes-status"></span>
+        </div>
+      </div>
+
+      <!-- HEALTH PANEL -->
+      <div id="healthMenu" style="display:none;">
+        <div class="health-cod-row">
+          <span class="health-section-label">Cause of Death</span>
+          <input type="text" id="health-cod-input" placeholder="e.g. Pneumonia, heart failure…" autocomplete="off" spellcheck="false" />
+        </div>
+        <span class="health-section-label">Health Events</span>
+        <ul id="health-list"></ul>
+        <div class="health-add-form">
+          <button id="health-add-btn">
+            <i class="fa-solid fa-plus"></i>
+            <span>Add event</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- HEALTH ADD OVERLAY -->
+      <div id="healthAddMenu" style="display:none;" class="add-overlay">
+        <button type="button" id="healthAddCancel" class="add-overlay-cancel" title="Cancel">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+        <span class="edit-label">Condition or Diagnosis</span>
+        <input type="text" id="health-condition-input" placeholder="e.g. Cancer diagnosis, surgery…" autocomplete="off" spellcheck="false" />
+        <span class="edit-label">Date</span>
+        <input type="text" id="health-date-input" placeholder="e.g. Jun 1985" autocomplete="off" spellcheck="false" />
+        <span class="edit-label">Notes</span>
+        <textarea id="health-notes-input" placeholder="Optional notes…" spellcheck="true" rows="3"></textarea>
+        <div class="edit-actions">
+          <div id="health-save-btn">Save</div>
         </div>
       </div>
 
@@ -256,6 +340,9 @@
         </button>
         <button id="tasks" title="Tasks">
           <a class="link" href="#"><i class="fa-solid fa-list-check"></i></a>
+        </button>
+        <button id="health" title="Health">
+          <a class="link" href="#"><i class="fa-solid fa-heart-pulse"></i></a>
         </button>
         <button id="notes" title="Notes">
           <a class="link" href="#"><i class="fa-regular fa-clipboard"></i></a>
