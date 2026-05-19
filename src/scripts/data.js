@@ -8,14 +8,15 @@ let src = {
 };
 
 let ids = {};
+let activeTreeId = null;
 export let active;
+export let searchLinks = null;
+
+export function getActiveTreeId() { return activeTreeId; }
 
 // Fetch settings and ancestors from Supabase. Call once on startup.
 export async function initialize() {
-  const [settingsResult, ancestorsResult] = await Promise.all([
-    supabase.from('user_settings').select('*').maybeSingle(),
-    supabase.from('ancestors').select('*').order('internal_id'),
-  ]);
+  const settingsResult = await supabase.from('user_settings').select('*').maybeSingle();
 
   if (settingsResult.data) {
     const s = settingsResult.data;
@@ -25,7 +26,13 @@ export async function initialize() {
     src.myheritage.root = s.myheritage_root    || '';
     src.familysearch.id = s.familysearch_id    || '';
     src.findagrave.id   = s.findagrave_id      || '';
+    activeTreeId        = s.active_tree_id     || null;
+    searchLinks         = s.search_links       ?? null;
   }
+
+  let ancestorsQuery = supabase.from('ancestors').select('*').order('internal_id');
+  if (activeTreeId) ancestorsQuery = ancestorsQuery.eq('tree_id', activeTreeId);
+  const ancestorsResult = await ancestorsQuery;
 
   if (ancestorsResult.data) {
     ids = {};
@@ -43,6 +50,8 @@ export async function initialize() {
         myheritage:   row.myheritage   || '',
         notes:        row.notes        || '',
         links:        row.links        || [],
+        tasks:        Array.isArray(row.tasks) ? row.tasks : [],
+        photos:       Array.isArray(row.photos) ? row.photos : [],
         spouses:      Array.isArray(row.spouses) ? row.spouses : [],
         father_id:    row.father_id    ?? null,
         mother_id:    row.mother_id    ?? null,
@@ -55,12 +64,25 @@ export async function initialize() {
   if (firstId) active = ids[firstId];
 }
 
+async function nextId() {
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data } = await supabase
+    .from('ancestors')
+    .select('internal_id')
+    .eq('user_id', user.id)
+    .order('internal_id', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return (data?.internal_id ?? 0) + 1;
+}
+
 // Insert a new person into Supabase and update local cache. Returns the new internal id.
 export async function createPerson(personData) {
-  const internalId = nextId();
+  const internalId = await nextId();
   const { data: { user } } = await supabase.auth.getUser();
   const { data: row, error } = await supabase.from('ancestors').insert({
     user_id:      user.id,
+    tree_id:      activeTreeId,
     internal_id:  internalId,
     first:        personData.first,
     middle:       personData.middle,
@@ -74,7 +96,7 @@ export async function createPerson(personData) {
     myheritage:   personData.myheritage,
   }).select().single();
   if (error) throw error;
-  ids[internalId] = { ...personData, notes: '', links: [], father_id: null, mother_id: null, _dbId: row.id };
+  ids[internalId] = { ...personData, notes: '', links: [], tasks: [], photos: [], spouses: [], father_id: null, mother_id: null, _dbId: row.id };
   return internalId;
 }
 
@@ -99,6 +121,16 @@ export async function savePerson(internalId, personData) {
   ids[internalId] = { ...ids[internalId], ...personData, _dbId: ids[internalId]?._dbId };
 }
 
+// Save the search_links array in user_settings.
+export async function saveSearchLinks(links) {
+  const { data: { user } } = await supabase.auth.getUser();
+  const { error } = await supabase
+    .from('user_settings')
+    .upsert({ user_id: user.id, search_links: links }, { onConflict: 'user_id' });
+  if (error) throw error;
+  searchLinks = links;
+}
+
 // Save only the notes field for the active person.
 export async function saveNotes(internalId, notes) {
   const { data: { user } } = await supabase.auth.getUser();
@@ -109,6 +141,30 @@ export async function saveNotes(internalId, notes) {
     .eq('internal_id', parseInt(internalId, 10));
   if (error) throw error;
   if (ids[internalId]) ids[internalId].notes = notes;
+}
+
+// Save the tasks array for a person.
+export async function saveTasks(internalId, tasks) {
+  const { data: { user } } = await supabase.auth.getUser();
+  const { error } = await supabase
+    .from('ancestors')
+    .update({ tasks })
+    .eq('user_id', user.id)
+    .eq('internal_id', parseInt(internalId, 10));
+  if (error) throw error;
+  if (ids[internalId]) ids[internalId].tasks = tasks;
+}
+
+// Save the photos array for a person.
+export async function savePhotos(internalId, photos) {
+  const { data: { user } } = await supabase.auth.getUser();
+  const { error } = await supabase
+    .from('ancestors')
+    .update({ photos })
+    .eq('user_id', user.id)
+    .eq('internal_id', parseInt(internalId, 10));
+  if (error) throw error;
+  if (ids[internalId]) ids[internalId].photos = photos;
 }
 
 // Save the links array for a person.
@@ -392,10 +448,6 @@ export function findByExternalId(externalId, website) {
   return undefined;
 }
 
-export function nextId() {
-  const keys = Object.keys(ids).map(Number).filter((n) => !isNaN(n));
-  return keys.length > 0 ? Math.max(...keys) + 1 : 1;
-}
 
 export function setActive(id) {
   if (/\d+/.test(id)) {

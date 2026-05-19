@@ -29,26 +29,6 @@
         </div>
       </div>
 
-      <!-- WEB SEARCH OVERLAY -->
-      <div id="webSearchMenu" style="display:none;">
-        <button type="button" id="webSearchCancel">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-        <span class="websearch-eyebrow">Searching for</span>
-        <p id="websearch-name">Firstname Surname</p>
-        <p id="websearch-dates">1800 – 1900</p>
-        <div class="websearch-grid">
-          <a id="ws-google" class="websearch-btn" href="#" target="_blank">
-            <i class="fa-brands fa-google"></i>
-            <span>Google</span>
-          </a>
-          <a id="ws-familysearch" class="websearch-btn" href="#" target="_blank">
-            <img src="/src/img/familysearch.svg" alt="" />
-            <span>FamilySearch</span>
-          </a>
-        </div>
-      </div>
-
       <!-- EDIT OVERLAY -->
       <form id="editMenu" style="display:none;">
         <button type="button" id="editCancel" title="Cancel">
@@ -184,14 +164,32 @@
         </div>
       </div>
 
-      <!-- URLS OVERLAY -->
-      <div id="urlsMenu" style="display:none;">
-        <div class="link-topbar">
-          <span class="link-topbar-title">Links</span>
-          <button id="urlsCancel" title="Close">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
+      <!-- WEB SEARCH PANEL -->
+      <div id="webSearchMenu" style="display:none;">
+        <ul id="websearch-list"></ul>
+        <div class="websearch-add-form">
+          <p class="websearch-hint">Search for <strong>John Doe</strong> (b. 1/1/1900, d. 1/1/2000) on the site and paste that URL — fields are detected automatically.</p>
+          <input type="text" id="websearch-label-input" placeholder="Label" autocomplete="off" spellcheck="false" />
+          <div class="websearch-add-row">
+            <input type="text" id="websearch-url-input" placeholder="Paste URL…" autocomplete="off" spellcheck="false" />
+            <button id="websearch-add-btn"><i class="fa-solid fa-plus"></i></button>
+          </div>
+          <p id="websearch-preview" class="websearch-preview"></p>
+          <span id="websearch-status" class="websearch-status"></span>
         </div>
+      </div>
+
+      <!-- TASKS PANEL -->
+      <div id="tasksMenu" style="display:none;">
+        <ul id="tasks-list"></ul>
+        <div class="tasks-add-form">
+          <input type="text" id="task-input" placeholder="Add a task…" autocomplete="off" spellcheck="false" />
+          <button id="task-add-btn"><i class="fa-solid fa-plus"></i></button>
+        </div>
+      </div>
+
+      <!-- LINKS PANEL -->
+      <div id="urlsMenu" style="display:none;">
         <ul id="urls-list"></ul>
         <div class="urls-add-form">
           <input type="url" id="url-input" placeholder="https://…" autocomplete="off" spellcheck="false" />
@@ -200,6 +198,27 @@
             <i class="fa-solid fa-plus"></i>
             <span>Add link</span>
           </button>
+        </div>
+      </div>
+
+      <!-- PHOTOS PANEL -->
+      <div id="photosMenu" style="display:none;">
+        <div id="photos-grid"></div>
+        <div class="photos-add-form">
+          <input type="url" id="photo-url-input" placeholder="https://…" autocomplete="off" spellcheck="false" />
+          <input type="text" id="photo-caption-input" placeholder="Caption (optional)" autocomplete="off" spellcheck="false" />
+          <button id="photo-add-btn">
+            <i class="fa-solid fa-plus"></i>
+            <span>Add photo</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- NOTES PANEL -->
+      <div id="notesMenu" style="display:none;">
+        <textarea id="notes-input" placeholder="Write notes about this ancestor…" spellcheck="true"></textarea>
+        <div class="notes-panel-bar">
+          <span id="notes-status"></span>
         </div>
       </div>
 

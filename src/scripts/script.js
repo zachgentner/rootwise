@@ -11,6 +11,19 @@ const editMenu = document.getElementById('editMenu');
 const webSearchMenu = document.getElementById('webSearchMenu');
 const linkMenu      = document.getElementById('linkMenu');
 const urlsMenu      = document.getElementById('urlsMenu');
+const notesMenu     = document.getElementById('notesMenu');
+const notesInput    = document.getElementById('notes-input');
+const notesStatus   = document.getElementById('notes-status');
+const tasksMenu     = document.getElementById('tasksMenu');
+const photosMenu    = document.getElementById('photosMenu');
+
+let notesOpen = false;
+let notesSaveTimer = null;
+let linksOpen = false;
+let tasksOpen = false;
+let webSearchOpen = false;
+let photosOpen = false;
+let completedCollapsed = true;
 
 let pendingLink    = null; // { field: 'father_id' | 'mother_id' | 'child' }
 let pendingNewLink = null; // { field, originId } — set when "create new" is triggered from link overlay
@@ -45,19 +58,22 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if (linkMenu.style.display !== 'none')           { pendingLink = null; ui.toggleElement(linkMenu); }
     else if (editMenu.style.display !== 'none')       ui.toggleElement(editMenu);
-    else if (webSearchMenu.style.display !== 'none')  ui.toggleElement(webSearchMenu);
-    else if (urlsMenu.style.display !== 'none')       ui.toggleElement(urlsMenu);
+    else if (photosOpen)                              closePhotos();
+    else if (linksOpen)                               closeLinks();
+    else if (tasksOpen)                               closeTasks();
+    else if (webSearchOpen)                           closeWebSearch();
+    else if (notesOpen)                               closeNotes();
   }
+});
+
+document.getElementById('photos').querySelector('a').addEventListener('click', (e) => {
+  e.preventDefault();
+  photosOpen ? closePhotos() : openPhotos();
 });
 
 document.getElementById('websearch').querySelector('a').addEventListener('click', (e) => {
   e.preventDefault();
-  populateWebSearch();
-  ui.toggleElement(webSearchMenu);
-});
-
-document.getElementById('webSearchCancel').addEventListener('click', () => {
-  ui.toggleElement(webSearchMenu);
+  webSearchOpen ? closeWebSearch() : openWebSearch();
 });
 
 document.getElementById('linkCancel').addEventListener('click', () => {
@@ -95,13 +111,9 @@ document.getElementById('linkInput').addEventListener('input', (e) => {
 
 document.getElementById('links').querySelector('a').addEventListener('click', (e) => {
   e.preventDefault();
-  populateUrlsMenu();
-  ui.toggleElement(urlsMenu);
+  linksOpen ? closeLinks() : openLinks();
 });
 
-document.getElementById('urlsCancel').addEventListener('click', () => {
-  ui.toggleElement(urlsMenu);
-});
 
 document.getElementById('url-add-btn').addEventListener('click', async () => {
   const urlInput   = document.getElementById('url-input');
@@ -123,9 +135,410 @@ document.getElementById('url-add-btn').addEventListener('click', async () => {
 
 document.getElementById('notes').querySelector('a').addEventListener('click', (e) => {
   e.preventDefault();
-  const id = data.findId(data.active);
-  window.location.href = `/src/markup/notes.html?id=${id}`;
+  notesOpen ? closeNotes() : openNotes();
 });
+
+notesInput.addEventListener('input', () => {
+  clearTimeout(notesSaveTimer);
+  notesSaveTimer = setTimeout(async () => {
+    const id = data.findId(data.active);
+    try {
+      await data.saveNotes(id, notesInput.value);
+      notesStatus.textContent = 'Saved';
+      setTimeout(() => { notesStatus.textContent = ''; }, 1500);
+    } catch (err) {
+      console.error('Save notes failed:', err.message);
+    }
+  }, 800);
+});
+
+function openNotes() {
+  if (photosOpen) closePhotos();
+  if (linksOpen) closeLinks();
+  if (tasksOpen) closeTasks();
+  if (webSearchOpen) closeWebSearch();
+  notesOpen = true;
+  quicklinks.style.display = 'none';
+  search.style.display = 'none';
+  document.getElementById('family').style.display = 'none';
+  notesInput.value = data.active.notes || '';
+  notesMenu.style.display = 'flex';
+  notesInput.focus();
+  document.getElementById('notes').classList.add('toolbar-btn--active');
+}
+
+function closeNotes() {
+  clearTimeout(notesSaveTimer);
+  notesOpen = false;
+  notesMenu.style.display = 'none';
+  quicklinks.style.display = '';
+  search.style.display = '';
+  document.getElementById('family').style.display = '';
+  document.getElementById('notes').classList.remove('toolbar-btn--active');
+}
+
+function openLinks() {
+  if (photosOpen) closePhotos();
+  if (notesOpen) closeNotes();
+  if (tasksOpen) closeTasks();
+  if (webSearchOpen) closeWebSearch();
+  linksOpen = true;
+  quicklinks.style.display = 'none';
+  search.style.display = 'none';
+  document.getElementById('family').style.display = 'none';
+  populateUrlsMenu();
+  urlsMenu.style.display = 'flex';
+  document.getElementById('links').classList.add('toolbar-btn--active');
+}
+
+function closeLinks() {
+  linksOpen = false;
+  urlsMenu.style.display = 'none';
+  quicklinks.style.display = '';
+  search.style.display = '';
+  document.getElementById('family').style.display = '';
+  document.getElementById('links').classList.remove('toolbar-btn--active');
+}
+
+document.getElementById('tasks').querySelector('a').addEventListener('click', (e) => {
+  e.preventDefault();
+  tasksOpen ? closeTasks() : openTasks();
+});
+
+document.getElementById('task-add-btn').addEventListener('click', addTask);
+document.getElementById('task-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') addTask();
+});
+
+async function addTask() {
+  const input = document.getElementById('task-input');
+  const text = input.value.trim();
+  if (!text) return;
+  const id = data.findId(data.active);
+  const tasks = [...(data.active.tasks || []), { id: Date.now(), text, done: false }];
+  try {
+    await data.saveTasks(id, tasks);
+    input.value = '';
+    populateTasksMenu();
+  } catch (err) {
+    console.error('Add task failed:', err.message);
+  }
+}
+
+function openTasks() {
+  if (photosOpen) closePhotos();
+  if (notesOpen) closeNotes();
+  if (linksOpen) closeLinks();
+  if (webSearchOpen) closeWebSearch();
+  tasksOpen = true;
+  quicklinks.style.display = 'none';
+  search.style.display = 'none';
+  document.getElementById('family').style.display = 'none';
+  populateTasksMenu();
+  tasksMenu.style.display = 'flex';
+  document.getElementById('tasks').classList.add('toolbar-btn--active');
+}
+
+function closeTasks() {
+  tasksOpen = false;
+  tasksMenu.style.display = 'none';
+  quicklinks.style.display = '';
+  search.style.display = '';
+  document.getElementById('family').style.display = '';
+  document.getElementById('tasks').classList.remove('toolbar-btn--active');
+}
+
+function openWebSearch() {
+  if (photosOpen) closePhotos();
+  if (notesOpen) closeNotes();
+  if (linksOpen) closeLinks();
+  if (tasksOpen) closeTasks();
+  webSearchOpen = true;
+  quicklinks.style.display = 'none';
+  search.style.display = 'none';
+  document.getElementById('family').style.display = 'none';
+  populateWebSearch();
+  webSearchMenu.style.display = 'flex';
+  document.getElementById('websearch').classList.add('toolbar-btn--active');
+}
+
+function closeWebSearch() {
+  webSearchOpen = false;
+  webSearchMenu.style.display = 'none';
+  quicklinks.style.display = '';
+  search.style.display = '';
+  document.getElementById('family').style.display = '';
+  document.getElementById('websearch').classList.remove('toolbar-btn--active');
+}
+
+function openPhotos() {
+  if (notesOpen) closeNotes();
+  if (linksOpen) closeLinks();
+  if (tasksOpen) closeTasks();
+  if (webSearchOpen) closeWebSearch();
+  photosOpen = true;
+  quicklinks.style.display = 'none';
+  search.style.display = 'none';
+  document.getElementById('family').style.display = 'none';
+  populatePhotosMenu();
+  photosMenu.style.display = 'flex';
+  document.getElementById('photos').classList.add('toolbar-btn--active');
+}
+
+function closePhotos() {
+  photosOpen = false;
+  photosMenu.style.display = 'none';
+  quicklinks.style.display = '';
+  search.style.display = '';
+  document.getElementById('family').style.display = '';
+  document.getElementById('photos').classList.remove('toolbar-btn--active');
+}
+
+function populatePhotosMenu() {
+  const grid = document.getElementById('photos-grid');
+  grid.innerHTML = '';
+  const photos = data.active.photos || [];
+
+  if (!photos.length) {
+    const empty = document.createElement('div');
+    empty.className = 'photos-empty';
+    empty.textContent = 'No photos yet.';
+    grid.appendChild(empty);
+    return;
+  }
+
+  photos.forEach((photo, i) => {
+    const item = document.createElement('div');
+    item.className = 'photo-item';
+
+    const wrap = document.createElement('div');
+    wrap.className = 'photo-img-wrap';
+
+    const img = document.createElement('img');
+    img.src = photo.url;
+    img.alt = photo.caption || '';
+    img.addEventListener('error', () => {
+      wrap.classList.add('photo-img-wrap--broken');
+      img.style.display = 'none';
+      const icon = document.createElement('i');
+      icon.className = 'fa-regular fa-image';
+      wrap.appendChild(icon);
+    });
+    wrap.appendChild(img);
+
+    const del = document.createElement('button');
+    del.className = 'photo-delete';
+    del.title = 'Remove';
+    del.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+    del.addEventListener('click', async () => {
+      const id = data.findId(data.active);
+      const updated = (data.active.photos || []).filter((_, idx) => idx !== i);
+      try {
+        await data.savePhotos(id, updated);
+        populatePhotosMenu();
+        updateProfilePhoto();
+      } catch (err) {
+        console.error('Delete photo failed:', err.message);
+      }
+    });
+    wrap.appendChild(del);
+    item.appendChild(wrap);
+
+    if (photo.caption) {
+      const cap = document.createElement('span');
+      cap.className = 'photo-caption';
+      cap.textContent = photo.caption;
+      item.appendChild(cap);
+    }
+
+    grid.appendChild(item);
+  });
+}
+
+document.getElementById('photo-add-btn').addEventListener('click', addPhoto);
+document.getElementById('photo-url-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') addPhoto();
+});
+
+async function addPhoto() {
+  const urlInput = document.getElementById('photo-url-input');
+  const capInput = document.getElementById('photo-caption-input');
+  const url = urlInput.value.trim();
+  if (!url) return;
+  const caption = capInput.value.trim();
+  const id = data.findId(data.active);
+  const photos = [...(data.active.photos || []), { id: Date.now(), url, caption }];
+  try {
+    await data.savePhotos(id, photos);
+    urlInput.value = '';
+    capInput.value = '';
+    populatePhotosMenu();
+    updateProfilePhoto();
+  } catch (err) {
+    console.error('Add photo failed:', err.message);
+  }
+}
+
+function updateProfilePhoto() {
+  const profile = document.getElementById('profile');
+  const first = (data.active?.photos || [])[0];
+  profile.innerHTML = '';
+  if (first) {
+    const img = document.createElement('img');
+    img.src = first.url;
+    img.alt = '';
+    img.addEventListener('error', () => {
+      profile.innerHTML = '<i class="fa-regular fa-user"></i>';
+    });
+    profile.appendChild(img);
+  } else {
+    profile.innerHTML = '<i class="fa-regular fa-user"></i>';
+  }
+}
+
+function buildTaskItem(task, i) {
+  const li = document.createElement('li');
+  li.className = 'task-item' + (task.done ? ' task-item--done' : '');
+
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.checked = task.done;
+  checkbox.addEventListener('change', async () => {
+    const id = data.findId(data.active);
+    const updated = (data.active.tasks || []).map((t, idx) =>
+      idx === i ? { ...t, done: checkbox.checked } : t
+    );
+    try {
+      await data.saveTasks(id, updated);
+      populateTasksMenu();
+    } catch (err) {
+      console.error('Toggle task failed:', err.message);
+    }
+  });
+
+  const textEl = document.createElement('span');
+  textEl.className = 'task-item-text';
+  textEl.textContent = task.text;
+  textEl.addEventListener('click', () => {
+    let cancelled = false;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'task-item-edit';
+    input.value = task.text;
+    li.replaceChild(input, textEl);
+    input.focus();
+    input.select();
+
+    const save = async () => {
+      if (cancelled) return;
+      const newText = input.value.trim();
+      if (!newText || newText === task.text) { li.replaceChild(textEl, input); return; }
+      const id = data.findId(data.active);
+      const updated = (data.active.tasks || []).map((t, idx) =>
+        idx === i ? { ...t, text: newText } : t
+      );
+      try {
+        await data.saveTasks(id, updated);
+        populateTasksMenu();
+      } catch (err) {
+        console.error('Edit task failed:', err.message);
+        li.replaceChild(textEl, input);
+      }
+    };
+
+    input.addEventListener('blur', save);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+      if (e.key === 'Escape') { cancelled = true; li.replaceChild(textEl, input); }
+    });
+  });
+
+  const del = document.createElement('button');
+  del.className = 'task-item-delete';
+  del.title = 'Remove';
+  del.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+  del.addEventListener('click', async () => {
+    const id = data.findId(data.active);
+    const updated = (data.active.tasks || []).filter((_, idx) => idx !== i);
+    try {
+      await data.saveTasks(id, updated);
+      populateTasksMenu();
+    } catch (err) {
+      console.error('Delete task failed:', err.message);
+    }
+  });
+
+  li.appendChild(checkbox);
+  li.appendChild(textEl);
+  li.appendChild(del);
+  return li;
+}
+
+function populateTasksMenu() {
+  const list = document.getElementById('tasks-list');
+  list.innerHTML = '';
+  const tasks = data.active.tasks || [];
+  const pending  = tasks.filter((t) => !t.done);
+  const done     = tasks.filter((t) => t.done);
+
+  if (!tasks.length) {
+    const empty = document.createElement('li');
+    empty.className = 'tasks-empty';
+    empty.innerHTML = '<i class="fa-solid fa-list-check"></i><span>No tasks yet</span>';
+    list.appendChild(empty);
+    return;
+  }
+
+  // ── Pending tasks ──────────────────────────────────────
+  if (pending.length) {
+    pending.forEach((task) => list.appendChild(buildTaskItem(task, tasks.indexOf(task))));
+  } else {
+    const allDone = document.createElement('li');
+    allDone.className = 'tasks-all-done';
+    allDone.innerHTML = '<i class="fa-solid fa-check-double"></i><span>All done!</span>';
+    list.appendChild(allDone);
+  }
+
+  // ── Completed section ──────────────────────────────────
+  if (!done.length) return;
+
+  const header = document.createElement('li');
+  header.className = 'tasks-section-header';
+
+  const toggle = document.createElement('button');
+  toggle.className = 'tasks-section-toggle';
+  toggle.innerHTML = `
+    <i class="fa-solid fa-chevron-${completedCollapsed ? 'right' : 'down'}"></i>
+    <span>Completed</span>
+    <span class="tasks-section-count">${done.length}</span>
+  `;
+  toggle.addEventListener('click', () => {
+    completedCollapsed = !completedCollapsed;
+    populateTasksMenu();
+  });
+
+  const clearBtn = document.createElement('button');
+  clearBtn.className = 'tasks-section-clear';
+  clearBtn.textContent = 'Clear all';
+  clearBtn.addEventListener('click', async () => {
+    const id = data.findId(data.active);
+    const updated = tasks.filter((t) => !t.done);
+    try {
+      await data.saveTasks(id, updated);
+      populateTasksMenu();
+    } catch (err) {
+      console.error('Clear done failed:', err.message);
+    }
+  });
+
+  header.appendChild(toggle);
+  header.appendChild(clearBtn);
+  list.appendChild(header);
+
+  if (!completedCollapsed) {
+    done.forEach((task) => list.appendChild(buildTaskItem(task, tasks.indexOf(task))));
+  }
+}
 
 search.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -302,36 +715,159 @@ function renderActive() {
   ui.updateId(data.findId(data.active), info.querySelector('#id'));
   ui.updateLifespan(data.active.birth, data.active.death, info.querySelector('#lifespan'));
   ui.updateLinks(data.getAllLinks(data.active), quicklinks);
+  updateProfilePhoto();
   renderFamily();
 }
 
+const DEFAULT_SEARCH_LINKS = [
+  { label: 'Google', url: 'https://www.google.com/search?q={first}+{last}+{birth}+genealogy' },
+  { label: 'FamilySearch', url: 'https://www.familysearch.org/search/record/results?q.givenName={first}&q.surname={last}' },
+];
+
+function getSearchLinks() {
+  return data.searchLinks ?? DEFAULT_SEARCH_LINKS;
+}
+
+function buildSearchUrl(template, person) {
+  const enc = (v) => encodeURIComponent(v || '');
+  return template
+    .replace(/\{first\}/g,  enc(person.first))
+    .replace(/\{middle\}/g, enc(person.middle))
+    .replace(/\{last\}/g,   enc(person.surname))
+    .replace(/\{maiden\}/g, enc(person.maiden))
+    .replace(/\{birth\}/g,  enc(person.birth))
+    .replace(/\{death\}/g,  enc(person.death));
+}
+
 function populateWebSearch() {
-  const person = data.active;
-  const nameParts = [person.first, person.middle ? `${person.middle[0]}.` : '', person.surname].filter(Boolean);
-  const fullName = nameParts.join(' ');
-  const lifespan = [person.birth, person.death].filter(Boolean).join(' – ');
+  const list = document.getElementById('websearch-list');
+  list.innerHTML = '';
+  const links = getSearchLinks();
 
-  webSearchMenu.querySelector('#websearch-name').textContent = fullName || '—';
-  webSearchMenu.querySelector('#websearch-dates').textContent = lifespan || '';
-
-  const searchName = [person.first, person.maiden || person.surname].filter(Boolean).join(' ');
-  const googleQuery = [searchName, person.birth, 'genealogy'].filter(Boolean).join(' ');
-  webSearchMenu.querySelector('#ws-google').href =
-    `https://www.google.com/search?q=${encodeURIComponent(googleQuery)}`;
-
-  const fsParams = new URLSearchParams();
-  if (person.first) fsParams.set('q.givenName', person.first);
-  const fsSurname = person.maiden || person.surname;
-  if (fsSurname) fsParams.set('q.surname', fsSurname);
-  if (person.birth) {
-    const yr = parseInt(person.birth, 10);
-    if (!isNaN(yr)) {
-      fsParams.set('q.birthLikeDate.from', yr - 5);
-      fsParams.set('q.birthLikeDate.to', yr + 5);
-    }
+  if (!links.length) {
+    const empty = document.createElement('li');
+    empty.className = 'websearch-empty';
+    empty.textContent = 'No search links yet. Add one below.';
+    list.appendChild(empty);
+    return;
   }
-  webSearchMenu.querySelector('#ws-familysearch').href =
-    `https://www.familysearch.org/search/record/results?${fsParams.toString()}`;
+
+  links.forEach((link, i) => {
+    const li = document.createElement('li');
+    li.className = 'websearch-item';
+
+    const a = document.createElement('a');
+    a.className = 'websearch-item-link';
+    a.href = buildSearchUrl(link.url, data.active);
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+
+    const favicon = document.createElement('img');
+    favicon.className = 'websearch-item-favicon';
+    favicon.src = getFaviconUrl(link.url);
+    favicon.width = 16;
+    favicon.height = 16;
+    favicon.alt = '';
+    favicon.addEventListener('error', () => { favicon.style.display = 'none'; });
+    const labelSpan = document.createElement('span');
+    labelSpan.textContent = link.label || link.url;
+    a.appendChild(favicon);
+    a.appendChild(labelSpan);
+
+    const del = document.createElement('button');
+    del.className = 'websearch-item-delete';
+    del.title = 'Remove';
+    del.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+    del.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const updated = getSearchLinks().filter((_, idx) => idx !== i);
+      try {
+        await data.saveSearchLinks(updated);
+        populateWebSearch();
+      } catch (err) { console.error('Delete search link failed:', err.message); }
+    });
+
+    li.appendChild(a);
+    li.appendChild(del);
+    list.appendChild(li);
+  });
+}
+
+document.getElementById('websearch-add-btn').addEventListener('click', addSearchLink);
+document.getElementById('websearch-url-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') addSearchLink();
+});
+document.getElementById('websearch-url-input').addEventListener('input', () => {
+  const raw = document.getElementById('websearch-url-input').value.trim();
+  const preview = document.getElementById('websearch-preview');
+  preview.textContent = raw ? detectUrlTemplate(raw) : '';
+});
+
+function getFaviconUrl(urlTemplate) {
+  try {
+    const baseUrl = urlTemplate.split('{')[0];
+    const { hostname } = new URL(baseUrl);
+    return `https://www.google.com/s2/favicons?domain=${hostname}&sz=16`;
+  } catch {
+    return '';
+  }
+}
+
+function detectUrlTemplate(url) {
+  const subs = [
+    // ISO and dash-separated dates (most specific first)
+    [/1900-01-01/g,          '{birth}'],
+    [/01-01-1900/g,          '{birth}'],
+    [/2000-01-01/g,          '{death}'],
+    [/01-01-2000/g,          '{death}'],
+    // Slash dates — raw
+    [/01\/01\/1900/g,        '{birth}'],
+    [/1\/1\/1900/g,          '{birth}'],
+    [/01\/01\/2000/g,        '{death}'],
+    [/1\/1\/2000/g,          '{death}'],
+    // Slash dates — URL-encoded (%2F)
+    [/01%2F01%2F1900/gi,     '{birth}'],
+    [/1%2F1%2F1900/gi,       '{birth}'],
+    [/01%2F01%2F2000/gi,     '{death}'],
+    [/1%2F1%2F2000/gi,       '{death}'],
+    // Year only (not adjacent to other digits)
+    [/(?<!\d)1900(?!\d)/g,   '{birth}'],
+    [/(?<!\d)2000(?!\d)/g,   '{death}'],
+    // Full name together (handle + and %20 spacing)
+    [/John(?:%20|\+)Doe/gi,  '{first}+{last}'],
+    [/Doe(?:%20|\+)John/gi,  '{last}+{first}'],
+    // Individual names (word boundaries)
+    [/\bJohn\b/gi,           '{first}'],
+    [/\bDoe\b/gi,            '{last}'],
+  ];
+  for (const [pattern, token] of subs) {
+    url = url.replace(pattern, token);
+  }
+  return url;
+}
+
+async function addSearchLink() {
+  const labelInput  = document.getElementById('websearch-label-input');
+  const urlInput    = document.getElementById('websearch-url-input');
+  const statusEl    = document.getElementById('websearch-status');
+  const raw = urlInput.value.trim();
+  if (!raw) return;
+  const url   = detectUrlTemplate(raw);
+  const label = labelInput.value.trim() || url;
+  const updated = [...getSearchLinks(), { label, url }];
+  statusEl.textContent = '';
+  delete statusEl.dataset.state;
+  try {
+    await data.saveSearchLinks(updated);
+    labelInput.value = '';
+    urlInput.value   = '';
+    document.getElementById('websearch-preview').textContent = '';
+    populateWebSearch();
+  } catch (err) {
+    statusEl.textContent = err.message || 'Save failed.';
+    statusEl.dataset.state = 'error';
+    console.error('Add search link failed:', err);
+  }
 }
 
 // ─── FAMILY PANEL ──────────────────────────────────────────────────────────
