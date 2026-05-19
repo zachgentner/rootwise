@@ -1,6 +1,7 @@
 import * as data from './data.js';
 import * as ui from './ui.js';
 import { getSession, signOut } from './auth.js';
+import { reformatDate, extractYear, formatPlaceholder, parseDate, formatDate } from './dates.js';
 
 const info = document.getElementById('info');
 const quicklinks = document.getElementById('quicklinks');
@@ -11,6 +12,7 @@ const editMenu = document.getElementById('editMenu');
 const webSearchMenu = document.getElementById('webSearchMenu');
 const linkMenu      = document.getElementById('linkMenu');
 const urlsMenu      = document.getElementById('urlsMenu');
+const sourcesMenu   = document.getElementById('sourcesMenu');
 const notesMenu     = document.getElementById('notesMenu');
 const notesInput    = document.getElementById('notes-input');
 const notesStatus   = document.getElementById('notes-status');
@@ -20,10 +22,12 @@ const photosMenu    = document.getElementById('photosMenu');
 let notesOpen = false;
 let notesSaveTimer = null;
 let linksOpen = false;
+let sourcesOpen = false;
 let tasksOpen = false;
 let webSearchOpen = false;
 let photosOpen = false;
 let completedCollapsed = true;
+let dupeCheckBypassed = false;
 
 let pendingLink    = null; // { field: 'father_id' | 'mother_id' | 'child' }
 let pendingNewLink = null; // { field, originId } — set when "create new" is triggered from link overlay
@@ -35,6 +39,25 @@ const popoutBtn = document.getElementById('popout');
 
 const isPopout = new URLSearchParams(window.location.search).get('popout') === 'true';
 if (isPopout) popoutBtn.style.display = 'none';
+
+function attachDateValidation(input) {
+  input.addEventListener('blur', () => {
+    const val = input.value.trim();
+    if (!val) { delete input.dataset.invalid; return; }
+    const parsed = parseDate(val);
+    if (parsed) {
+      const reformatted = formatDate(parsed, data.dateFormat);
+      if (reformatted) input.value = reformatted;
+      delete input.dataset.invalid;
+    } else {
+      input.dataset.invalid = 'true';
+    }
+  });
+  input.addEventListener('input', () => { delete input.dataset.invalid; });
+}
+
+attachDateValidation(editMenu.querySelector('#birthInput'));
+attachDateValidation(editMenu.querySelector('#deathInput'));
 
 window.addEventListener('load', async () => {
   const session = await getSession();
@@ -59,11 +82,17 @@ document.addEventListener('keydown', (e) => {
     if (linkMenu.style.display !== 'none')           { pendingLink = null; ui.toggleElement(linkMenu); }
     else if (editMenu.style.display !== 'none')       ui.toggleElement(editMenu);
     else if (photosOpen)                              closePhotos();
+    else if (sourcesOpen)                             closeSources();
     else if (linksOpen)                               closeLinks();
     else if (tasksOpen)                               closeTasks();
     else if (webSearchOpen)                           closeWebSearch();
     else if (notesOpen)                               closeNotes();
   }
+});
+
+document.getElementById('sources').querySelector('a').addEventListener('click', (e) => {
+  e.preventDefault();
+  sourcesOpen ? closeSources() : openSources();
 });
 
 document.getElementById('photos').querySelector('a').addEventListener('click', (e) => {
@@ -154,6 +183,7 @@ notesInput.addEventListener('input', () => {
 
 function openNotes() {
   if (photosOpen) closePhotos();
+  if (sourcesOpen) closeSources();
   if (linksOpen) closeLinks();
   if (tasksOpen) closeTasks();
   if (webSearchOpen) closeWebSearch();
@@ -179,6 +209,7 @@ function closeNotes() {
 
 function openLinks() {
   if (photosOpen) closePhotos();
+  if (sourcesOpen) closeSources();
   if (notesOpen) closeNotes();
   if (tasksOpen) closeTasks();
   if (webSearchOpen) closeWebSearch();
@@ -198,6 +229,152 @@ function closeLinks() {
   search.style.display = '';
   document.getElementById('family').style.display = '';
   document.getElementById('links').classList.remove('toolbar-btn--active');
+}
+
+function openSources() {
+  if (photosOpen) closePhotos();
+  if (sourcesOpen) return;
+  if (notesOpen) closeNotes();
+  if (linksOpen) closeLinks();
+  if (tasksOpen) closeTasks();
+  if (webSearchOpen) closeWebSearch();
+  sourcesOpen = true;
+  quicklinks.style.display = 'none';
+  search.style.display = 'none';
+  document.getElementById('family').style.display = 'none';
+  populateSourcesMenu();
+  sourcesMenu.style.display = 'flex';
+  document.getElementById('sources').classList.add('toolbar-btn--active');
+}
+
+function closeSources() {
+  sourcesOpen = false;
+  sourcesMenu.style.display = 'none';
+  quicklinks.style.display = '';
+  search.style.display = '';
+  document.getElementById('family').style.display = '';
+  document.getElementById('sources').classList.remove('toolbar-btn--active');
+}
+
+function buildSourceItem(source, i) {
+  const li = document.createElement('li');
+  li.className = 'source-item';
+
+  const body = document.createElement('div');
+  body.className = 'source-item-body';
+
+  const titleEl = document.createElement('span');
+  titleEl.className = 'source-item-title';
+  titleEl.textContent = source.title;
+  body.appendChild(titleEl);
+
+  if (source.repository) {
+    const repoEl = document.createElement('span');
+    repoEl.className = 'source-item-repo';
+    repoEl.textContent = source.repository;
+    body.appendChild(repoEl);
+  }
+
+  if (source.date_accessed) {
+    const dateEl = document.createElement('span');
+    dateEl.className = 'source-item-date';
+    dateEl.textContent = `Accessed: ${source.date_accessed}`;
+    body.appendChild(dateEl);
+  }
+
+  if (source.notes) {
+    const notesEl = document.createElement('span');
+    notesEl.className = 'source-item-notes';
+    notesEl.textContent = source.notes;
+    body.appendChild(notesEl);
+  }
+
+  li.appendChild(body);
+
+  if (source.url) {
+    const linkEl = document.createElement('a');
+    linkEl.className = 'source-item-link';
+    linkEl.href = source.url;
+    linkEl.target = '_blank';
+    linkEl.rel = 'noopener noreferrer';
+    linkEl.title = 'Open source';
+    linkEl.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square"></i>';
+    li.appendChild(linkEl);
+  }
+
+  const del = document.createElement('button');
+  del.className = 'source-item-delete';
+  del.title = 'Remove';
+  del.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+  del.addEventListener('click', async (e) => {
+    e.preventDefault();
+    const id = data.findId(data.active);
+    const updated = (data.active.sources || []).filter((_, idx) => idx !== i);
+    try {
+      await data.saveSources(id, updated);
+      populateSourcesMenu();
+    } catch (err) {
+      console.error('Delete source failed:', err.message);
+    }
+  });
+  li.appendChild(del);
+
+  return li;
+}
+
+function populateSourcesMenu() {
+  const list = document.getElementById('sources-list');
+  list.innerHTML = '';
+  const sources = data.active.sources || [];
+
+  if (!sources.length) {
+    const empty = document.createElement('li');
+    empty.className = 'sources-empty';
+    empty.textContent = 'No sources yet.';
+    list.appendChild(empty);
+    return;
+  }
+
+  sources.forEach((source, i) => list.appendChild(buildSourceItem(source, i)));
+}
+
+document.getElementById('source-add-btn').addEventListener('click', addSource);
+document.getElementById('source-title-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') addSource();
+});
+
+async function addSource() {
+  const titleInput = document.getElementById('source-title-input');
+  const repoInput  = document.getElementById('source-repo-input');
+  const urlInput   = document.getElementById('source-url-input');
+  const dateInput  = document.getElementById('source-date-input');
+  const notesInput2 = document.getElementById('source-notes-input');
+
+  const title = titleInput.value.trim();
+  if (!title) return;
+
+  const source = {
+    id:           Date.now(),
+    title,
+    repository:   repoInput.value.trim(),
+    url:          urlInput.value.trim(),
+    date_accessed: dateInput.value.trim(),
+    notes:        notesInput2.value.trim(),
+  };
+
+  const id = data.findId(data.active);
+  const updated = [...(data.active.sources || []), source];
+  try {
+    await data.saveSources(id, updated);
+    titleInput.value  = '';
+    repoInput.value   = '';
+    urlInput.value    = '';
+    dateInput.value   = '';
+    notesInput2.value = '';
+    populateSourcesMenu();
+  } catch (err) {
+    console.error('Add source failed:', err.message);
+  }
 }
 
 document.getElementById('tasks').querySelector('a').addEventListener('click', (e) => {
@@ -227,6 +404,7 @@ async function addTask() {
 
 function openTasks() {
   if (photosOpen) closePhotos();
+  if (sourcesOpen) closeSources();
   if (notesOpen) closeNotes();
   if (linksOpen) closeLinks();
   if (webSearchOpen) closeWebSearch();
@@ -250,6 +428,7 @@ function closeTasks() {
 
 function openWebSearch() {
   if (photosOpen) closePhotos();
+  if (sourcesOpen) closeSources();
   if (notesOpen) closeNotes();
   if (linksOpen) closeLinks();
   if (tasksOpen) closeTasks();
@@ -272,6 +451,7 @@ function closeWebSearch() {
 }
 
 function openPhotos() {
+  if (sourcesOpen) closeSources();
   if (notesOpen) closeNotes();
   if (linksOpen) closeLinks();
   if (tasksOpen) closeTasks();
@@ -603,21 +783,83 @@ edit.addEventListener('click', () => {
 
 
 saveBtn.addEventListener('click', async () => {
+  editMenu.querySelector('.edit-dup-actions')?.remove();
+
+  const birthField = editMenu.querySelector('#birthInput');
+  const deathField = editMenu.querySelector('#deathInput');
+  const birthRaw = birthField.value.trim();
+  const deathRaw = deathField.value.trim();
+  const editStatus = document.getElementById('edit-status');
+
+  if (birthRaw && !parseDate(birthRaw)) {
+    birthField.dataset.invalid = 'true';
+    editStatus.textContent = 'Birth date is not recognized.';
+    editStatus.dataset.state = 'error';
+    return;
+  }
+  if (deathRaw && !parseDate(deathRaw)) {
+    deathField.dataset.invalid = 'true';
+    editStatus.textContent = 'Death date is not recognized.';
+    editStatus.dataset.state = 'error';
+    return;
+  }
+
   const updatedPerson = {
     first:        editMenu.querySelector('#firstInput').value,
     middle:       editMenu.querySelector('#middleInput').value,
     surname:      editMenu.querySelector('#surnameInput').value,
     maiden:       editMenu.querySelector('#maidenInput').value,
-    birth:        editMenu.querySelector('#birthInput').value,
-    death:        editMenu.querySelector('#deathInput').value,
+    birth:        reformatDate(editMenu.querySelector('#birthInput').value.trim(), data.dateFormat),
+    death:        reformatDate(editMenu.querySelector('#deathInput').value.trim(), data.dateFormat),
+    birth_place:  editMenu.querySelector('#birthPlaceInput').value,
+    death_place:  editMenu.querySelector('#deathPlaceInput').value,
     ancestry:     editMenu.querySelector('#ancestryInput').value,
     familysearch: editMenu.querySelector('#familysearchInput').value,
     findagrave:   editMenu.querySelector('#findagraveInput').value,
     myheritage:   editMenu.querySelector('#myheritageInput').value,
   };
 
-  const editStatus = document.getElementById('edit-status');
   editStatus.textContent = '';
+  delete editStatus.dataset.state;
+
+  if (isAddingNew && !dupeCheckBypassed) {
+    const dupes = findDuplicates(updatedPerson);
+    if (dupes.length > 0) {
+      const dupe = dupes[0];
+      const dupeName = [dupe.first, dupe.surname].filter(Boolean).join(' ');
+      const dupeYear = extractYear(dupe.birth);
+      editStatus.textContent = `Similar to ${dupeName}${dupeYear ? ` (b. ${dupeYear})` : ''}. Save anyway?`;
+      editStatus.dataset.state = 'warn';
+
+      const actionsEl = document.createElement('div');
+      actionsEl.className = 'edit-dup-actions';
+
+      const saveAnywayBtn = document.createElement('button');
+      saveAnywayBtn.type = 'button';
+      saveAnywayBtn.textContent = 'Save anyway';
+      saveAnywayBtn.addEventListener('click', () => {
+        dupeCheckBypassed = true;
+        saveBtn.click();
+        dupeCheckBypassed = false;
+      });
+
+      const cancelDupeBtn = document.createElement('button');
+      cancelDupeBtn.type = 'button';
+      cancelDupeBtn.textContent = 'Cancel';
+      cancelDupeBtn.addEventListener('click', () => {
+        editStatus.textContent = '';
+        delete editStatus.dataset.state;
+        actionsEl.remove();
+      });
+
+      actionsEl.appendChild(saveAnywayBtn);
+      actionsEl.appendChild(cancelDupeBtn);
+      editStatus.after(actionsEl);
+      return;
+    }
+  }
+  dupeCheckBypassed = false;
+
   try {
     let id;
     if (isAddingNew) {
@@ -1135,8 +1377,24 @@ function personName(person) {
   return [person.first, person.surname || person.maiden].filter(Boolean).join(' ') || '—';
 }
 
+function findDuplicates(newPerson) {
+  const newSurname = (newPerson.surname || '').toLowerCase().trim();
+  const newFirst   = (newPerson.first   || '').toLowerCase().trim();
+  const newYear    = extractYear(newPerson.birth);
+  return data.searchByName('').filter((p) => {
+    const pSurname = ((p.surname || p.maiden) || '').toLowerCase().trim();
+    const pFirst   = (p.first || '').toLowerCase().trim();
+    const pYear    = extractYear(p.birth);
+    if (newSurname && pSurname === newSurname && newYear && pYear === newYear) return true;
+    if (newFirst && newSurname && pFirst === newFirst && pSurname === newSurname && !newYear && !pYear) return true;
+    return false;
+  });
+}
+
 function personSubline(person) {
-  return [person.birth, person.death].filter(Boolean).join(' – ');
+  const y1 = extractYear(person.birth);
+  const y2 = extractYear(person.death);
+  return [y1, y2].filter(Boolean).join(' – ');
 }
 
 function openLinkOverlay(field, title, spouseId = null) {
@@ -1258,14 +1516,20 @@ function populateUrlsMenu() {
 }
 
 function populateEditMenu() {
-  editMenu.querySelector('#firstInput').value      = data.active.first;
-  editMenu.querySelector('#middleInput').value     = data.active.middle;
-  editMenu.querySelector('#surnameInput').value    = data.active.surname;
-  editMenu.querySelector('#maidenInput').value     = data.active.maiden;
-  editMenu.querySelector('#birthInput').value      = data.active.birth;
-  editMenu.querySelector('#deathInput').value      = data.active.death;
-  editMenu.querySelector('#ancestryInput').value   = data.active.ancestry;
+  const datePlaceholder = formatPlaceholder(data.dateFormat);
+  editMenu.querySelector('#birthInput').placeholder = datePlaceholder;
+  editMenu.querySelector('#deathInput').placeholder  = datePlaceholder;
+
+  editMenu.querySelector('#firstInput').value        = data.active.first;
+  editMenu.querySelector('#middleInput').value       = data.active.middle;
+  editMenu.querySelector('#surnameInput').value      = data.active.surname;
+  editMenu.querySelector('#maidenInput').value       = data.active.maiden;
+  editMenu.querySelector('#birthInput').value        = data.active.birth;
+  editMenu.querySelector('#birthPlaceInput').value   = data.active.birth_place;
+  editMenu.querySelector('#deathInput').value        = data.active.death;
+  editMenu.querySelector('#deathPlaceInput').value   = data.active.death_place;
+  editMenu.querySelector('#ancestryInput').value     = data.active.ancestry;
   editMenu.querySelector('#familysearchInput').value = data.active.familysearch;
-  editMenu.querySelector('#findagraveInput').value = data.active.findagrave;
-  editMenu.querySelector('#myheritageInput').value = data.active.myheritage;
+  editMenu.querySelector('#findagraveInput').value   = data.active.findagrave;
+  editMenu.querySelector('#myheritageInput').value   = data.active.myheritage;
 }

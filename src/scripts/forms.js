@@ -1,5 +1,6 @@
 import { supabase } from './supabase.js';
 import { getSession } from './auth.js';
+import { reformatDate, DEFAULT_FORMAT } from './dates.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   const session = await getSession();
@@ -33,6 +34,10 @@ async function loadSettings() {
 
   const autoload = document.getElementById('autoload');
   if (autoload) autoload.checked = data.autoload ?? true;
+
+  currentDateFormat = data.date_format || DEFAULT_FORMAT;
+  const fmtSelect = document.getElementById('dateFormat');
+  if (fmtSelect) fmtSelect.value = currentDateFormat;
 }
 
 async function saveSettings() {
@@ -41,6 +46,13 @@ async function saveSettings() {
   btn.disabled = true;
 
   const { data: { user } } = await supabase.auth.getUser();
+
+  const newDateFormat = getVal('dateFormat') || DEFAULT_FORMAT;
+
+  if (newDateFormat !== currentDateFormat) {
+    await reformatAllDates(currentDateFormat, newDateFormat);
+    currentDateFormat = newDateFormat;
+  }
 
   const { error } = await supabase.from('user_settings').upsert({
     user_id:          user.id,
@@ -51,6 +63,7 @@ async function saveSettings() {
     myheritage_id:    getVal('myheritageId'),
     myheritage_root:  getVal('myheritageRoot'),
     autoload:         document.getElementById('autoload')?.checked ?? true,
+    date_format:      newDateFormat,
   }, { onConflict: 'user_id' });
 
   if (error) {
@@ -80,9 +93,34 @@ function handleUpload(e) {
   console.log('GEDCOM selected:', input.files[0].name);
 }
 
+// ─── DATE FORMAT MIGRATION ────────────────────────────────────────────────────
+
+async function reformatAllDates(oldFormat, newFormat) {
+  if (oldFormat === newFormat) return;
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: ancestors } = await supabase
+    .from('ancestors')
+    .select('id, birth, death')
+    .eq('user_id', user.id);
+
+  if (!ancestors?.length) return;
+
+  for (const row of ancestors) {
+    const newBirth = reformatDate(row.birth, newFormat);
+    const newDeath = reformatDate(row.death, newFormat);
+    if (newBirth !== (row.birth || '') || newDeath !== (row.death || '')) {
+      await supabase
+        .from('ancestors')
+        .update({ birth: newBirth || null, death: newDeath || null })
+        .eq('id', row.id);
+    }
+  }
+}
+
 // ─── TREE MANAGEMENT ──────────────────────────────────────────────────────────
 
 let activeTreeId = null;
+let currentDateFormat = DEFAULT_FORMAT;
 
 async function loadTrees() {
   const { data: { user } } = await supabase.auth.getUser();

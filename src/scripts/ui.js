@@ -1,4 +1,5 @@
 import * as data from './data.js';
+import { extractYear } from './dates.js';
 
 export function updateName(person, element) {
   const firstName = person.first ? `${person.first} ` : '';
@@ -14,14 +15,12 @@ export function updateId(id, element) {
 }
 
 export function updateLifespan(birth, death, element) {
-  if (birth === undefined && death === undefined) {
+  const birthYear = extractYear(birth);
+  const deathYear = extractYear(death);
+  if (!birthYear && !deathYear) {
     return (element.innerText = 'No dates');
   }
-
-  const birthYear = birth !== undefined ? birth : '';
-  const deathYear = death !== undefined ? death : '';
-
-  return (element.innerText = `${birthYear} - ${deathYear}`);
+  return (element.innerText = `${birthYear} – ${deathYear}`);
 }
 
 export function updateLinks(links, element) {
@@ -118,14 +117,14 @@ export function filterResults(people, search, element) {
         datesSpan.style.cssText = 'margin-left:auto;flex-shrink:0;display:flex;align-items:center;gap:1ch;font-family:"IBM Plex Mono",monospace;font-size:9px;opacity:0.65;white-space:nowrap;';
 
         const birthSpan = document.createElement('span');
-        birthSpan.textContent = id.birth || '';
+        birthSpan.textContent = extractYear(id.birth) || '';
         birthSpan.style.cssText = 'display:inline-block;width:4ch;text-align:right;';
 
         const sepSpan = document.createElement('span');
         sepSpan.textContent = '–';
 
         const deathSpan = document.createElement('span');
-        deathSpan.textContent = id.death || '';
+        deathSpan.textContent = extractYear(id.death) || '';
         deathSpan.style.cssText = 'display:inline-block;width:4ch;';
 
         datesSpan.appendChild(birthSpan);

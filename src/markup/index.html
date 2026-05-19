@@ -46,16 +46,24 @@
           <input type="text" id="surnameInput"  placeholder="Surname" style="flex:1" />
         </div>
 
-        <span class="edit-label">Dates</span>
-        <div class="edit-row">
-          <div class="edit-field" style="flex:1">
-            <span class="edit-field-abbr">Birth</span>
-            <input type="text" id="birthInput" placeholder="yyyy" />
-          </div>
-          <div class="edit-field" style="flex:1">
-            <span class="edit-field-abbr">Death</span>
-            <input type="text" id="deathInput" placeholder="yyyy" />
-          </div>
+        <span class="edit-label">Birth</span>
+        <div class="edit-field">
+          <span class="edit-field-abbr">Date</span>
+          <input type="text" id="birthInput" placeholder="e.g. 12 Jun 1885" />
+        </div>
+        <div class="edit-field">
+          <span class="edit-field-abbr">Place</span>
+          <input type="text" id="birthPlaceInput" placeholder="e.g. Salt Lake City, UT" />
+        </div>
+
+        <span class="edit-label">Death</span>
+        <div class="edit-field">
+          <span class="edit-field-abbr">Date</span>
+          <input type="text" id="deathInput" placeholder="e.g. 4 Mar 1952" />
+        </div>
+        <div class="edit-field">
+          <span class="edit-field-abbr">Place</span>
+          <input type="text" id="deathPlaceInput" placeholder="e.g. Provo, UT" />
         </div>
 
         <span class="edit-label">Source IDs</span>
@@ -176,6 +184,22 @@
           </div>
           <p id="websearch-preview" class="websearch-preview"></p>
           <span id="websearch-status" class="websearch-status"></span>
+        </div>
+      </div>
+
+      <!-- SOURCES PANEL -->
+      <div id="sourcesMenu" style="display:none;">
+        <ul id="sources-list"></ul>
+        <div class="sources-add-form">
+          <input type="text"  id="source-title-input"   placeholder="Title (required)…"         autocomplete="off" spellcheck="false" />
+          <input type="text"  id="source-repo-input"    placeholder="Repository (optional)…"    autocomplete="off" spellcheck="false" />
+          <input type="url"   id="source-url-input"     placeholder="URL (optional)…"           autocomplete="off" spellcheck="false" />
+          <input type="text"  id="source-date-input"    placeholder="Date accessed (optional)…" autocomplete="off" spellcheck="false" />
+          <textarea           id="source-notes-input"   placeholder="Notes (optional)…"         spellcheck="true" rows="2"></textarea>
+          <button id="source-add-btn">
+            <i class="fa-solid fa-plus"></i>
+            <span>Add source</span>
+          </button>
         </div>
       </div>
 

@@ -11,6 +11,7 @@ let ids = {};
 let activeTreeId = null;
 export let active;
 export let searchLinks = null;
+export let dateFormat = 'D MMMM YYYY';
 
 export function getActiveTreeId() { return activeTreeId; }
 
@@ -28,6 +29,7 @@ export async function initialize() {
     src.findagrave.id   = s.findagrave_id      || '';
     activeTreeId        = s.active_tree_id     || null;
     searchLinks         = s.search_links       ?? null;
+    dateFormat          = s.date_format        || 'D MMMM YYYY';
   }
 
   let ancestorsQuery = supabase.from('ancestors').select('*').order('internal_id');
@@ -44,15 +46,18 @@ export async function initialize() {
         maiden:       row.maiden       || '',
         birth:        row.birth        || '',
         death:        row.death        || '',
+        birth_place:  row.birth_place  || '',
+        death_place:  row.death_place  || '',
         ancestry:     row.ancestry     || '',
         familysearch: row.familysearch || '',
         findagrave:   row.findagrave   || '',
         myheritage:   row.myheritage   || '',
         notes:        row.notes        || '',
         links:        row.links        || [],
-        tasks:        Array.isArray(row.tasks) ? row.tasks : [],
-        photos:       Array.isArray(row.photos) ? row.photos : [],
+        tasks:        Array.isArray(row.tasks)   ? row.tasks   : [],
+        photos:       Array.isArray(row.photos)  ? row.photos  : [],
         spouses:      Array.isArray(row.spouses) ? row.spouses : [],
+        sources:      Array.isArray(row.sources) ? row.sources : [],
         father_id:    row.father_id    ?? null,
         mother_id:    row.mother_id    ?? null,
         _dbId:        row.id,
@@ -90,13 +95,15 @@ export async function createPerson(personData) {
     maiden:       personData.maiden,
     birth:        personData.birth,
     death:        personData.death,
+    birth_place:  personData.birth_place,
+    death_place:  personData.death_place,
     ancestry:     personData.ancestry,
     familysearch: personData.familysearch,
     findagrave:   personData.findagrave,
     myheritage:   personData.myheritage,
   }).select().single();
   if (error) throw error;
-  ids[internalId] = { ...personData, notes: '', links: [], tasks: [], photos: [], spouses: [], father_id: null, mother_id: null, _dbId: row.id };
+  ids[internalId] = { ...personData, notes: '', links: [], tasks: [], photos: [], spouses: [], sources: [], father_id: null, mother_id: null, _dbId: row.id };
   return internalId;
 }
 
@@ -110,6 +117,8 @@ export async function savePerson(internalId, personData) {
     maiden:       personData.maiden,
     birth:        personData.birth,
     death:        personData.death,
+    birth_place:  personData.birth_place,
+    death_place:  personData.death_place,
     ancestry:     personData.ancestry,
     familysearch: personData.familysearch,
     findagrave:   personData.findagrave,
@@ -177,6 +186,18 @@ export async function saveLinks(internalId, links) {
     .eq('internal_id', parseInt(internalId, 10));
   if (error) throw error;
   if (ids[internalId]) ids[internalId].links = links;
+}
+
+// Save the sources array for a person.
+export async function saveSources(internalId, sources) {
+  const { data: { user } } = await supabase.auth.getUser();
+  const { error } = await supabase
+    .from('ancestors')
+    .update({ sources })
+    .eq('user_id', user.id)
+    .eq('internal_id', parseInt(internalId, 10));
+  if (error) throw error;
+  if (ids[internalId]) ids[internalId].sources = sources;
 }
 
 // Return { father, mother } for a given person (by internal id string).
